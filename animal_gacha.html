@@ -334,9 +334,8 @@ const jewelSaleValue = j => Math.floor(3 * j.tier)
 
 function jewelScore(unit, j){
   if(!j) return -Infinity
-  // Only consider role-compatible and level-capable items
+  // Only consider role-compatible items
   if(!(j.role==='ANY' || j.role===unit.role)) return -Infinity
-  if(j.tier < unit.level) return -Infinity
   const base = computeUnitStatsWithJewels(unit, []).effDps
   const withJ = computeUnitStatsWithJewels(unit, [j.id]).effDps
   const dEff = withJ - base
@@ -347,30 +346,31 @@ function jewelScore(unit, j){
 
 function autoManageJewelry(){
   if(!S || !S.inventory || !S.inventory.jewelry) return
-  // 1) Auto-sell below party min level
   const minL = partyMinLevel()
-  let sold = 0, goldGained = 0
-  Object.values(S.inventory.jewelry).forEach(j => {
-    if(j && j.tier < minL){ sold++; goldGained += jewelSaleValue(j); delete S.inventory.jewelry[j.id] }
-  })
-  if(sold>0){ S.gold += goldGained; logMsg(`🗑️ Auto-sold ${sold} low-tier jewels (+${F(goldGained)} gold) [party min Lv ${minL}]`) }
 
-  // 2) Reset equips
+  // Reset equips
   partyUnits().forEach(u => u.jewelry = [null,null,null])
 
-  // 3) Distribute best-available per unit (greedy, highest DPS first)
+  // Distribute best-available per unit (greedy, highest DPS first)
   const pool = Object.values(S.inventory.jewelry).slice()
   const assigned = new Set()
   const unitsSorted = partyUnits().slice().sort((a,b)=>computeUnitStats(b).effDps - computeUnitStats(a).effDps)
   for(const u of unitsSorted){
-    const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role) && j.tier >= u.level)
+    const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role))
     candidates.sort((a,b)=>jewelScore(u,b) - jewelScore(u,a))
     const picks = candidates.slice(0,3).map(j=>j.id)
-    // Mark assigned
     picks.forEach(id => assigned.add(id))
-    // Equip
     u.jewelry = [picks[0]||null, picks[1]||null, picks[2]||null]
   }
+
+  // Auto-sell any unused jewels below party min level
+  let sold = 0, goldGained = 0
+  Object.values(S.inventory.jewelry).forEach(j => {
+    if(j && !assigned.has(j.id) && j.tier < minL){
+      sold++; goldGained += jewelSaleValue(j); delete S.inventory.jewelry[j.id]
+    }
+  })
+  if(sold>0){ S.gold += goldGained; logMsg(`🗑️ Auto-sold ${sold} low-tier jewels (+${F(goldGained)} gold) [party min Lv ${minL}]`) }
 }
 
 // ===== Battle & Drops =====
@@ -780,6 +780,17 @@ function runTests(){
   const before = partyUnits().map(u=>u.jewelry.filter(Boolean).length).reduce((a,b)=>a+b,0)
   awardJewelry(); const after = partyUnits().map(u=>u.jewelry.filter(Boolean).length).reduce((a,b)=>a+b,0)
   A(after >= before, 'Auto-equip does not reduce equipped count')
+  // Low-tier jewels persist until replacements exist
+  partyUnits().forEach(u => { u.level = 20; u.jewelry=[null,null,null] })
+  S.inventory.jewelry = {}
+  const keep = makeJewelry(partyUnits()[0].role, 5)
+  S.inventory.jewelry[keep.id] = keep
+  autoManageJewelry()
+  A(partyUnits()[0].jewelry.includes(keep.id), 'Keeps low-tier jewel when no replacement')
+  const upgrade = makeJewelry(partyUnits()[0].role, 20)
+  S.inventory.jewelry[upgrade.id] = upgrade
+  autoManageJewelry()
+  A(!S.inventory.jewelry[keep.id], 'Replaces low-tier jewel when higher-tier available')
   // No legacy ids
   const legacy = ['gravortoise','nebuline','razorloom']
   A(!UNIT_POOL.some(u => legacy.includes(u.id)), 'UNIT_POOL has no legacy ids')
