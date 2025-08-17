@@ -354,21 +354,28 @@ function autoManageJewelry(){
   })
   if(sold>0){ S.gold += goldGained; logMsg(`🗑️ Auto-sold ${sold} low-tier jewels (+${F(goldGained)} gold) [party min Lv ${minL}]`) }
 
-  // 2) Reset equips
-  partyUnits().forEach(u => u.jewelry = [null,null,null])
+  // 2) Snapshot previous equips
+  const prevEquips = {}
+  partyUnits().forEach(u => { prevEquips[u.id] = (u.jewelry||[]).slice() })
 
-  // 3) Distribute best-available per unit (greedy, highest DPS first)
+  // Build pool of all jewelry and mark currently equipped pieces as taken
   const pool = Object.values(S.inventory.jewelry).slice()
   const assigned = new Set()
+  partyUnits().forEach(u => { (u.jewelry||[]).forEach(id => assigned.add(id)) })
+
+  // 3) Distribute best-available per unit (greedy, highest DPS first)
   const unitsSorted = partyUnits().slice().sort((a,b)=>computeUnitStats(b).effDps - computeUnitStats(a).effDps)
   for(const u of unitsSorted){
+    // Allow this unit to keep its previous jewels by freeing them from the taken set
+    (prevEquips[u.id]||[]).forEach(id => assigned.delete(id))
+
     const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role) && j.tier >= u.level)
     candidates.sort((a,b)=>jewelScore(u,b) - jewelScore(u,a))
-    const picks = candidates.slice(0,3).map(j=>j.id)
+    const picks = candidates.slice(0,3)
     // Mark assigned
-    picks.forEach(id => assigned.add(id))
+    picks.forEach(j => assigned.add(j.id))
     // Equip
-    u.jewelry = [picks[0]||null, picks[1]||null, picks[2]||null]
+    u.jewelry = [picks[0]?.id || null, picks[1]?.id || null, picks[2]?.id || null]
   }
 }
 
