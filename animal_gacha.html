@@ -375,7 +375,7 @@ function autoManageJewelry(){
 
 // ===== Battle & Drops =====
 const spawnEnemy = () => {
-  const lvl = Math.max(1, Math.floor(1 + Math.log10(1+S.gold)*2 + (S.enemy?.level||1)*0.05))
+  const lvl = Math.max(1, partyMinLevel())
   const type = pick(ENEMY_TYPES).id
   const hp = Math.floor(100 + Math.pow(lvl, 1.8) * 18)
   S.enemy = { level:lvl, type, hp, maxHp:hp }
@@ -788,6 +788,13 @@ function runTests(){
   const stBefore = computeUnitStats(testU).effDps; const prevWeapon = testU.bestWeapon; testU.bestWeapon += 100; const stAfter = computeUnitStats(testU).effDps; A(stAfter > stBefore, 'Armory Power (weapon) increases DPS'); testU.bestWeapon = prevWeapon
   const eBefore = computeUnitStats(testU).ehp; const prevArmor = testU.bestArmor; testU.bestArmor += 50; const eAfter = computeUnitStats(testU).ehp; A(eAfter > eBefore, 'Armory Power (armor) increases EHP'); testU.bestArmor = prevArmor
   const m = calcMetrics(); A(m.gph >= 0 && m.tph >= 0 && isFinite(m.kpm), 'calcMetrics returns sane numbers')
+  // Enemy level should track party level
+  const prevLevels = S.active.map(id => S.roster[id].level)
+  S.active.forEach(id => S.roster[id].level = 10)
+  spawnEnemy()
+  A(S.enemy.level >= 10, 'Enemy scales with player level')
+  S.active.forEach((id,i) => S.roster[id].level = prevLevels[i])
+  spawnEnemy()
   // flashSave must be safe without #savestatus
   try { flashSave('ok'); A(true, 'flashSave() null-safe without #savestatus') } catch(e){ A(false, 'flashSave() threw without #savestatus') }
   const passCount = results.filter(r=>r.pass).length
