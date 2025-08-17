@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Idle Alien-Animals – AFK RPG (Single File)</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel-2:#1d2330; --ink:#e7ecf3; --ink-dim:#aab6cc; --accent:#7dd3fc; --accent-2:#a78bfa;
+    --good:#34d399; --warn:#f59e0b; --bad:#f87171; --grid-gap:.6rem
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; font:14px/1.35 system-ui,Segoe UI,Roboto,Inter,Arial; color:var(--ink); background:radial-gradient(1200px 800px at 20% -10%,#1a2233 0%,#12151c 55%,#0f1115 100%) fixed}
+  h1{font-size:18px; margin:0 0 .4rem; letter-spacing:.3px}
+  h2{font-size:14px; margin:.4rem 0; color:var(--ink-dim); font-weight:600}
+  small{color:var(--ink-dim)}
+  .app{max-width:1200px; margin:20px auto; padding:12px}
+  .topbar{display:grid; grid-template-columns:1fr auto; gap:.5rem; align-items:center; position:sticky; top:0; backdrop-filter:saturate(140%) blur(6px); background:#0f111580; padding:.35rem .5rem; border-radius:10px; border:1px solid #ffffff10}
+  .stat-pill{display:flex; gap:.4rem; align-items:center; background:linear-gradient(180deg,#1b2230,#141822); padding:.35rem .6rem; border:1px solid #ffffff12; border-radius:999px; box-shadow:0 1px 0 #ffffff10 inset; white-space:nowrap}
+  .stat-pill strong{font-size:14px}
+  .pill-row{display:flex; gap:.6rem; flex-wrap:wrap; align-items:center}
+  .btn{border:1px solid #ffffff1a; background:linear-gradient(180deg,#242b3b,#181d29); color:var(--ink); padding:.45rem .7rem; border-radius:10px; cursor:pointer; transition:transform .05s ease, opacity .2s, background .2s; user-select:none}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.45; cursor:not-allowed; border-color:#ffffff10}
+  .btn.bad{background:linear-gradient(180deg,#3a1b1b,#241414); border-color:#ffffff14}
+  .grid{display:grid; gap:var(--grid-gap)}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel-2)); border:1px solid #ffffff14; border-radius:14px; padding:.8rem; box-shadow:inset 0 1px 0 #ffffff10}
+  .char{display:grid; grid-template-columns:52px 1fr auto; gap:.6rem; align-items:center}
+  .char .svg{width:48px; height:48px; border-radius:12px; background:#0b0f16; display:grid; place-items:center; border:1px solid #ffffff14}
+  .char .meta{display:grid; gap:.2rem}
+  .role{font-weight:700; letter-spacing:.5px}
+  .role.TANK{color:#60a5fa}
+  .role.MAGE{color:#c084fc}
+  .role.FIGHTER{color:#f43f5e}
+  .stars{letter-spacing:.5px; color:#ffe48b}
+  .bar{height:8px; background:#0c1018; border:1px solid #ffffff14; border-radius:999px; overflow:hidden}
+  .bar>i{display:block; height:100%; background:linear-gradient(90deg,#60a5fa,#22d3ee)}
+  .kv{display:grid; grid-template-columns:repeat(6,1fr); gap:.4rem; margin-top:.4rem}
+  .kv div{background:#0e1420; border:1px dashed #ffffff12; padding:.35rem .45rem; border-radius:10px; text-align:center; min-height:42px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden}
+  .kv b{display:block; font-size:12px; color:var(--ink-dim); white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:100%}
+  .section{display:grid; gap:.6rem}
+  .vlist{display:grid; gap:.4rem}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:.6rem}
+  .row .miss{color:var(--bad); font-size:12px}
+  .tiny{font-size:12px; color:var(--ink-dim)}
+  .codebox{display:flex; gap:.4rem}
+  .details-dev{margin-top:.8rem; opacity:.65}
+  .details-dev>summary{cursor:pointer; list-style:none}
+  .details-dev[open]{opacity:1}
+  .details-dev summary::-webkit-details-marker{display:none}
+  .details-dev summary{font-size:12px; color:var(--ink-dim)}
+  input[type="number"], input[type="text"]{background:#0b0f16; border:1px solid #ffffff22; color:var(--ink); border-radius:8px; padding:.4rem .5rem}
+  select{background:#0b0f16; border:1px solid #ffffff22; color:var(--ink); border-radius:8px; padding:.35rem .45rem; text-overflow:ellipsis; white-space:nowrap; overflow:hidden}
+  .inv{max-height:150px; overflow:auto; border:1px dashed #ffffff14; padding:.4rem; border-radius:10px; background:#0b0f16}
+  .log{max-height:180px; overflow:auto; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; background:#0b0f16; border:1px solid #ffffff10; border-radius:10px; padding:.5rem}
+  .hpbar{height:10px; background:#0c1018; border:1px solid #ffffff14; border-radius:8px; overflow:hidden}
+  .hpbar>i{display:block; height:100%; background:linear-gradient(90deg,#34d399,#f59e0b)}
+  .tag{display:inline-block; padding:.1rem .4rem; border-radius:999px; border:1px solid #ffffff22; font-size:12px; color:var(--ink-dim); margin-left:.3rem}
+  .nowrap{white-space:nowrap}
+  .foot{opacity:.7; text-align:center; margin-top:.4rem}
+  .charts{display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem}
+  .chart{background:#0b0f16; border:1px solid #ffffff10; border-radius:10px; padding:.35rem .5rem}
+  .chart svg{width:100%; height:60px}
+  @media (max-width:1000px){ .cols-3{grid-template-columns:1fr} .charts{grid-template-columns:1fr} }
+  .stat-pill svg{width:16px;height:16px;display:inline-block;vertical-align:middle;flex:0 0 16px}
+  .stat-pill > div{display:flex;align-items:center;gap:.35rem}
+  /* Truncation helpers to keep Dashboard & Upgrades from stretching */
+  .truncate{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .clamp2{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  /* Toast for save feedback (used if #savestatus not present) */
+  #toast{position:fixed; right:12px; bottom:12px; background:#121826ee; color:var(--ink); border:1px solid #ffffff22; border-radius:8px; padding:.35rem .6rem; font-size:12px; opacity:0; transition:opacity .25s; pointer-events:none; z-index:9999}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="pill-row">
+      <div class="stat-pill" title="Gold"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c4.97 0 9 1.79 9 4s-4.03 4-9 4s-9-1.79-9-4s4.03-4 9-4m0 10c4.97 0 9 1.79 9 4s-4.03 4-9 4s-9-1.79-9-4s4.03-4 9-4" opacity=".35"/><ellipse cx="12" cy="7" rx="9" ry="4"/></svg><div>Gold: <strong id="gold">0</strong></div></div>
+      <div class="stat-pill" title="Gold/hr"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg><div>Gold/hr: <strong id="gph">0</strong></div></div>
+      <div class="stat-pill" title="Tickets"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M2 10c1.1 0 2-.9 2-2s.9-2 2-2h8l4 4h2a2 2 0 0 1 2 2v2h-2l-4 4H6a2 2 0 0 1-2-2c0-1.1-.9-2-2-2v-4Z"/></svg><div>Tickets: <strong id="tickets">0</strong></div></div>
+      <div class="stat-pill" title="Tickets/hr"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M2 10c1.1 0 2-.9 2-2s.9-2 2-2h8l4 4h2a2 2 0 0 1 2 2v2h-2l-4 4H6a2 2 0 0 1-2-2c0-1.1-.9-2-2-2v-4Z"/></svg><div>TPH: <strong id="tph">0</strong></div></div>
+    </div>
+    <div class="pill-row">
+      <div class="stat-pill" title="Diamantium"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 6l-3 10H7L4 8l8-6z"/></svg><div>Dia: <strong id="dia">0</strong></div></div>
+      <div class="stat-pill" title="Eternium"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l4 8l8 4l-8 4l-4 8l-4-8L0 14l8-4z"/></svg><div>Ete: <strong id="ete">0</strong></div></div>
+      <button class="btn" id="saveBtn" title="Save">Save</button>
+      <button class="btn bad" id="resetBtn" title="Hard Reset">Reset</button>
+    </div>
+    <div class="tiny nowrap">Idle Alien-Animals • v0.4.0 • auto-jewelry • prestige requirements • layout clamps</div>
+  </div>
+
+  <div class="grid cols-3" style="margin-top:.6rem; grid-template-columns:2fr 3fr 2fr">
+    <div class="panel section" id="partyPanel">
+      <h1>Party <small>(3 active)</small></h1>
+      <div id="partyList" class="vlist"></div>
+      <div class="tiny">Armory Power ➜ best weapon & armor applied automatically. Jewelry is unique & auto-equipped; view-only on the card.</div>
+    </div>
+
+    <div class="panel section">
+      <h1>Battle & Dashboard</h1>
+      <div class="vlist">
+        <div class="row"><div class="truncate">Enemy: <b id="enemyName">—</b> <span id="enemyLvl" class="tag">Lv 1</span></div><div>Type: <span id="enemyType" class="tag">—</span></div></div>
+        <div class="hpbar"><i id="hpbar" style="width:100%"></i></div>
+        <div id="dashGrid" class="kv" style="grid-template-columns:repeat(6,1fr)"></div>
+        <div class="charts">
+          <div class="chart"><div class="tiny">DPS (last ~2m)</div><svg id="chartDps" viewBox="0 0 200 60"></svg></div>
+          <div class="chart"><div class="tiny">Gold/hr (last ~2m)</div><svg id="chartGold" viewBox="0 0 200 60"></svg></div>
+          <div class="chart"><div class="tiny">Tickets/hr (last ~2m)</div><svg id="chartTickets" viewBox="0 0 200 60"></svg></div>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="panel section">
+      <h1>Upgrades</h1>
+      <div class="vlist" id="upgrades"></div>
+      <h2>Resets</h2>
+      <div class="vlist" id="resets"></div>
+      <h2>Gacha</h2>
+      <div class="row">
+        <div>
+          <button class="btn" id="pull1">Summon ×1</button>
+          <button class="btn" id="pull10">Summon ×10</button>
+        </div>
+        <small>Units: 1★ base. Duplicates increase ★ up to 5★ (each ★ is a huge power spike).</small>
+      </div>
+      <div id="gachaResults" class="inv tiny"></div>
+    </div>
+  </div>
+
+  <div class="panel section" id="jewelryPanel" style="margin-top:.6rem">
+    <h1>Jewelry Bag</h1>
+    <div id="jewelryBag" class="inv tiny"></div>
+  </div>
+
+  <details class="details-dev">
+    <summary>Developer Tools (click to open)</summary>
+    <div class="codebox" style="margin-top:.4rem">
+      <input id="devInput" type="text" placeholder="dev: tickets 50 | gold 1e6 | win | diam 10 | ete 1 | jewelry" />
+      <button class="btn" id="devRun">Run</button>
+    </div>
+  </details>
+
+  <div id="toast" aria-live="polite"></div>
+
+  <div class="foot tiny">Tip: each character has 3 jewelry slots. Pieces cap at a level (tier). Low-tier items auto-sell; best-in-bag is auto-equipped per unit & role.</div>
+</div>
+
+<script>
+// ===== Utilities =====
+const F = x => new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:2}).format(x)
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v))
+const now = () => Date.now()
+const rnd = (min, max) => min + Math.random() * (max - min)
+const chance = p => Math.random() < p
+const pick = arr => arr[Math.floor(Math.random()*arr.length)]
+
+// ===== SVG Icons =====
+const SVG = {
+  TANK: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M10 28l14-14 14 14-14 10-14-10z" fill="#0e1420"/><path d="M8 28h32"/><path d="M24 14l6 6"/></g></svg>`,
+  MAGE: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="18" r="6"/><path d="M12 36c4-6 8-9 12-9s8 3 12 9"/><path d="M18 12l-4-3M30 12l4-3"/></g></svg>`,
+  FIGHTER: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M10 34l10-10 4 4-10 10z"/><path d="M24 20l6-6 8 8-6 6z"/><path d="M32 14c3 0 6 1 8 3"/></g></svg>`
+}
+
+// ===== Data =====
+const UNIT_POOL = [
+{id:'terraclaw', name:'Terraclaw', role:'TANK', base:{dps:6, hp:160, crit:0.05, armor:18}, enabled:true},
+{id:'nebulynx', name:'Nebulynx', role:'MAGE', base:{dps:14, hp:90, crit:0.18, armor:6}, enabled:true},
+{id:'vortexhorn', name:'Vortexhorn', role:'FIGHTER', base:{dps:10, hp:120, crit:0.12, armor:10}, enabled:true},
+  // extras kept for test stability but disabled for summons
+  {id:'bulwarkat', name:'Bulwarkat', role:'TANK', base:{dps:7, hp:150, crit:0.06, armor:20}, enabled:false}
+]
+
+const ENEMY_TYPES = [
+  {id:'carapoid', name:'Carapoid', bias:'armor'},
+  {id:'plasmoid', name:'Plasmoid', bias:'ticket'},
+  {id:'gearex', name:'Gearex', bias:'weapon'},
+  {id:'mantifex', name:'Mantifex', bias:'jewelry'},
+  {id:'glimmerbug', name:'Glimmerbug', bias:'gold'},
+  // added variants for more variety
+  {id:'shockmote', name:'Shockmote', bias:'ticket'},
+  {id:'rustbeast', name:'Rustbeast', bias:'weapon'},
+  {id:'aurorling', name:'Aurorling', bias:'gold'},
+  {id:'chronowasp', name:'Chronowasp', bias:'jewelry'},
+  {id:'psiloclaw', name:'Psiloclaw', bias:'armor'}
+]
+
+const DEFAULT_STATE = {
+  gold: 100,
+  tickets: 5,
+  upgrades: { dps:0, gold:0, crit:0 },
+  roster: {},
+  inventory: { jewelry:{} },
+  active: ['terraclaw','nebulynx','vortexhorn'],
+  enemy: { level:1, type:'carapoid', hp:100, maxHp:100 },
+  lastTick: now(),
+  log: [],
+  meta: { diamantium:0, eternium:0, prestiges:0 }
+}
+
+// ===== Persistence =====
+const saveKey = 'idle-alien-animals-v04'
+let S = null
+const save = () => { try{ localStorage.setItem(saveKey, JSON.stringify(S)) }catch(e){}; flashSave('Saved') }
+const load = () => {
+  let raw = localStorage.getItem(saveKey) || localStorage.getItem('idle-alien-animals-v03')
+  if(raw){
+    S = JSON.parse(raw)
+  } else {
+    S = structuredClone(DEFAULT_STATE)
+    UNIT_POOL.slice(0,3).forEach(u => S.roster[u.id] = seedUnit(u))
+  }
+  if(!S.inventory) S.inventory = {jewelry:{}}
+  if(!S.upgrades) S.upgrades = {dps:0, gold:0, crit:0}
+  if(!S.active) S.active = Object.keys(S.roster).slice(0,3)
+  if(!S.meta) S.meta = {diamantium:0, eternium:0, prestiges:0}
+  if(S.meta && typeof S.meta.prestiges!=='number') S.meta.prestiges = 0
+  // Migration from old ids → new ids
+  const idMap = { gravortoise:'terraclaw', nebuline:'nebulynx', razorloom:'vortexhorn' }
+  S.active = S.active.map(id => idMap[id] || id)
+  Object.keys(idMap).forEach(oldId => {
+    if(S.roster[oldId] && !S.roster[idMap[oldId]]){
+      const newId = idMap[oldId]
+      const nameMap = {terraclaw:'Terraclaw',nebulynx:'Nebulynx',vortexhorn:'Vortexhorn'}
+      const u = S.roster[oldId]
+      u.id = newId; u.name = nameMap[newId] || u.name
+      S.roster[newId] = u
+      delete S.roster[oldId]
+    }
+  })
+}
+const resetAll = () => { localStorage.removeItem(saveKey); location.reload() }
+const flashSave = msg => {
+  const el = document.getElementById('savestatus')
+  if(el){
+    el.textContent = msg
+    el.style.opacity = '1'
+    setTimeout(()=>{ el.style.opacity = '.6' }, 800)
+  } else {
+    // Fallback toast if savestatus pill isn't in the topbar
+    let t = document.getElementById('toast')
+    if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t) }
+    t.textContent = msg
+    t.style.opacity = '1'
+    clearTimeout(t._timer)
+    t._timer = setTimeout(()=>{ t.style.opacity = '0' }, 900)
+  }
+}
+
+// ===== Units & Stats =====
+const seedUnit = u => ({ id:u.id, name:u.name, role:u.role, level:1, stars:1, base:u.base, bestWeapon:0, bestArmor:0, jewelry:[null,null,null], prestige:0, transcend:0 })
+const levelUpCost = lvl => Math.floor(20 * Math.pow(lvl, 1.7))
+const starMult = stars => Math.pow(1.8, stars-1)
+const prestigeMult = prestige => Math.pow(10, prestige)
+const transcendMult = transcend => Math.pow(50, transcend)
+const levelMult = lvl => 1 + 0.12*(lvl-1)
+const critExpected = (dps, critChance, critMult=1.5) => dps * (1 + critChance * (critMult-1))
+
+// Accept optional list of jewel ids to apply instead of unit.jewelry
+const applyJewelry = (unit, stats, jIds=null) => {
+  let add = { dpsPct:0, goldPct:0, armorPct:0, critPct:0, armorToDpsPct:0 }
+  const list = jIds || unit.jewelry
+  list.forEach(jid => {
+    if(!jid) return
+    const j = S.inventory.jewelry[jid]
+    if(!j) return
+    const scale = Math.min(unit.level, j.tier) / j.tier
+    add.dpsPct += (j.effects.dpsPct||0) * scale
+    add.goldPct += (j.effects.goldPct||0) * scale
+    add.armorPct += (j.effects.armorPct||0) * scale
+    add.critPct += (j.effects.critPct||0) * scale
+    add.armorToDpsPct += (j.effects.armorToDpsPct||0) * scale
+  })
+  stats.armor *= (1 + add.armorPct)
+  stats.crit = clamp(stats.crit + add.critPct, 0, .9)
+  stats.dps *= (1 + add.dpsPct)
+  stats.goldPct = (stats.goldPct||0) + add.goldPct
+  stats.dps += stats.armor * add.armorToDpsPct
+  return stats
+}
+
+const computeUnitStats = unit => {
+  let dps = unit.base.dps * levelMult(unit.level) * starMult(unit.stars) * prestigeMult(unit.prestige) * transcendMult(unit.transcend) + unit.bestWeapon
+  let hp = unit.base.hp * levelMult(unit.level) * starMult(unit.stars) * prestigeMult(unit.prestige) * transcendMult(unit.transcend)
+  let armor = unit.base.armor * (1 + 0.03*(unit.level-1)) + unit.bestArmor
+  let crit = clamp(unit.base.crit + 0.01*(unit.level-1), 0, .9)
+  dps *= 1 + 0.05 * S.upgrades.dps
+  crit = clamp(crit + 0.01 * S.upgrades.crit, 0, .9)
+  let stats = { dps, hp, armor, crit, goldPct:0 }
+  stats = applyJewelry(unit, stats)
+  const ehp = hp * (1 + armor/100)
+  const effDps = critExpected(stats.dps, stats.crit)
+  return { ...stats, ehp, effDps }
+}
+
+const computeUnitStatsWithJewels = (unit, jIds) => {
+  let dps = unit.base.dps * levelMult(unit.level) * starMult(unit.stars) * prestigeMult(unit.prestige) * transcendMult(unit.transcend) + unit.bestWeapon
+  let hp = unit.base.hp * levelMult(unit.level) * starMult(unit.stars) * prestigeMult(unit.prestige) * transcendMult(unit.transcend)
+  let armor = unit.base.armor * (1 + 0.03*(unit.level-1)) + unit.bestArmor
+  let crit = clamp(unit.base.crit + 0.01*(unit.level-1), 0, .9)
+  dps *= 1 + 0.05 * S.upgrades.dps
+  crit = clamp(crit + 0.01 * S.upgrades.crit, 0, .9)
+  let stats = { dps, hp, armor, crit, goldPct:0 }
+  stats = applyJewelry(unit, stats, jIds)
+  const ehp = hp * (1 + armor/100)
+  const effDps = critExpected(stats.dps, stats.crit)
+  return { ...stats, ehp, effDps }
+}
+
+const partyUnits = () => S.active.map(id => S.roster[id]).filter(Boolean)
+const partyStats = () => { let p = { dps:0, goldPct:0 }; partyUnits().forEach(u => { const st = computeUnitStats(u); p.dps += st.effDps; p.goldPct += st.goldPct }); return p }
+const partyMinLevel = () => Math.min(...partyUnits().map(u=>u.level)) || 1
+
+// ===== Jewelry Auto-Management =====
+let _jid_counter = 1
+const makeJewelry = (forRole, lvl) => {
+  const tier = Math.max(5, Math.round(lvl/5)*5)
+  const id = 'J'+(_jid_counter++)
+  const names = { TANK:['Gravity Core','Aegis Kernel','Stoneheart Node'], MAGE:['Nebula Pendant','Quasar Lattice','Aether Prism'], FIGHTER:['Razor Charm','Blitz Fang','Impact Sigil'], ANY:['Time Shard','Echo Loop','Lucky Array'] }
+  const role = forRole || pick(['TANK','MAGE','FIGHTER','ANY'])
+  let effects = {}
+  if(role==='TANK') effects = { armorPct:0.18, armorToDpsPct:0.06 }
+  else if(role==='MAGE') effects = { dpsPct:0.18, goldPct:0.05 }
+  else if(role==='FIGHTER') effects = { dpsPct:0.12, critPct:0.05 }
+  else effects = { goldPct:0.09, dpsPct:0.05 }
+  return { id, name: pick(names[role]), role, tier, effects }
+}
+
+const jewelSaleValue = j => Math.floor(3 * j.tier)
+
+function jewelScore(unit, j){
+  if(!j) return -Infinity
+  // Only consider role-compatible and level-capable items
+  if(!(j.role==='ANY' || j.role===unit.role)) return -Infinity
+  if(j.tier < unit.level) return -Infinity
+  const base = computeUnitStatsWithJewels(unit, []).effDps
+  const withJ = computeUnitStatsWithJewels(unit, [j.id]).effDps
+  const dEff = withJ - base
+  const goldWeight = 5 // small nudge for gold boosters
+  const g = (j.effects.goldPct||0) * goldWeight
+  return dEff + g
+}
+
+function autoManageJewelry(){
+  if(!S || !S.inventory || !S.inventory.jewelry) return
+  // 1) Auto-sell below party min level
+  const minL = partyMinLevel()
+  let sold = 0, goldGained = 0
+  Object.values(S.inventory.jewelry).forEach(j => {
+    if(j && j.tier < minL){ sold++; goldGained += jewelSaleValue(j); delete S.inventory.jewelry[j.id] }
+  })
+  if(sold>0){ S.gold += goldGained; logMsg(`🗑️ Auto-sold ${sold} low-tier jewels (+${F(goldGained)} gold) [party min Lv ${minL}]`) }
+
+  // 2) Reset equips
+  partyUnits().forEach(u => u.jewelry = [null,null,null])
+
+  // 3) Distribute best-available per unit (greedy, highest DPS first)
+  const pool = Object.values(S.inventory.jewelry).slice()
+  const assigned = new Set()
+  const unitsSorted = partyUnits().slice().sort((a,b)=>computeUnitStats(b).effDps - computeUnitStats(a).effDps)
+  for(const u of unitsSorted){
+    const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role) && j.tier >= u.level)
+    candidates.sort((a,b)=>jewelScore(u,b) - jewelScore(u,a))
+    const picks = candidates.slice(0,3).map(j=>j.id)
+    // Mark assigned
+    picks.forEach(id => assigned.add(id))
+    // Equip
+    u.jewelry = [picks[0]||null, picks[1]||null, picks[2]||null]
+  }
+}
+
+// ===== Battle & Drops =====
+const spawnEnemy = () => {
+  const lvl = Math.max(1, Math.floor(1 + Math.log10(1+S.gold)*2 + (S.enemy?.level||1)*0.05))
+  const type = pick(ENEMY_TYPES).id
+  const hp = Math.floor(100 + Math.pow(lvl, 1.8) * 18)
+  S.enemy = { level:lvl, type, hp, maxHp:hp }
+  logMsg(`A ${ENEMY_TYPES.find(e=>e.id===type).name} appears (Lv ${lvl})`)
+}
+const baseGoldPerKill = lvl => Math.floor(10 + lvl * 4)
+const dropRolls = (enemyType, lvl) => {
+  let c = { gold:1, ticket:0.03 + lvl*0.0008, weapon:0.14 + lvl*0.0009, armor:0.14 + lvl*0.0009, jewelry:0.012 + lvl*0.0003 }
+  const bias = ENEMY_TYPES.find(e=>e.id===enemyType)?.bias
+  if(bias==='gold') c.gold *= 1.2
+  if(bias==='ticket') c.ticket *= 1.7
+  if(bias==='weapon') c.weapon *= 1.5
+  if(bias==='armor') c.armor *= 1.5
+  if(bias==='jewelry') c.jewelry *= 2
+  return c
+}
+
+const awardWeapon = () => {
+  const u = pick(partyUnits());
+  const power = Math.floor(rnd(1, 6) + Math.pow(S.enemy.level, 0.9));
+  const improved = power > u.bestWeapon;
+  if(improved){ u.bestWeapon = power; logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS) [best]`) } else { logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS)`) }
+  renderParty();
+}
+const awardArmor = () => {
+  const u = pick(partyUnits());
+  const power = Math.floor(rnd(1, 4) + Math.pow(S.enemy.level, 0.8));
+  const improved = power > u.bestArmor;
+  if(improved){ u.bestArmor = power; logMsg(`🛡️ ${u.name} found armor (+${power} Armor) [best]`) } else { logMsg(`🛡️ ${u.name} found armor (+${power} Armor)`) }
+  renderParty();
+}
+
+const awardJewelry = () => { const roles = [...new Set(partyUnits().map(u=>u.role))]; const role = chance(.7) ? pick(roles) : pick(['TANK','MAGE','FIGHTER','ANY']); const j = makeJewelry(role, S.enemy.level); S.inventory.jewelry[j.id] = j; logMsg(`💍 Found ${j.name} [${j.role}] (caps at Lv ${j.tier})`); autoManageJewelry(); renderJewelryBag(); renderParty() }
+
+const processKill = () => {
+  const lvl = S.enemy.level
+  const goldBase = baseGoldPerKill(lvl)
+  const pstats = partyStats()
+  const goldGain = Math.floor(goldBase * (1 + 0.07*S.upgrades.gold) * (1 + pstats.goldPct))
+  S.gold += goldGain
+  logMsg(`+${F(goldGain)} gold`)
+  const ch = dropRolls(S.enemy.type, lvl)
+  if(chance(ch.ticket)){ S.tickets += 1; logMsg('🎟️ Gacha ticket') }
+  if(chance(ch.weapon)) awardWeapon()
+  if(chance(ch.armor)) awardArmor()
+  if(chance(ch.jewelry)) awardJewelry()
+}
+
+const tick = dt => { const p = partyStats(); const d = p.dps * dt; S.enemy.hp -= d; if(S.enemy.hp <= 0){ processKill(); spawnEnemy() } }
+
+// ===== Gacha =====
+const P_CHAR = 0.015 // 1.5% chance per ticket to roll any character
+// Dynamic scrap gold so misses feel rewarding and scale with progression
+const ticketScrapGold = (enemyLvl) => {
+  const base = 5 + enemyLvl * 3; // grows with enemy level
+  const pstats = partyStats();
+  const mult = (1 + 0.07*S.upgrades.gold) * (1 + pstats.goldPct) * (1 + 0.02*S.meta.diamantium + 0.05*S.meta.eternium);
+  return Math.floor(base * mult);
+}
+
+// Only summon from enabled units (so we can keep extras for tests but not in gacha)
+const summonPool = () => UNIT_POOL.filter(u => u.enabled)
+const summonOnce = () => {
+  if(S.tickets <= 0) return {ok:false, msg:'No tickets'}
+  S.tickets -= 1
+  if(Math.random() >= P_CHAR){
+    const g = ticketScrapGold(S.enemy.level)
+    S.gold += g
+    return {ok:true, msg:`Scrap ➜ +${g} gold`}
+  }
+  const pool = summonPool()
+  const udef = pick(pool.length?pool:UNIT_POOL.slice(0,3))
+  let result = ''
+  if(!S.roster[udef.id]){ S.roster[udef.id] = seedUnit(udef); result = `NEW: ${udef.name} (${udef.role})` }
+  else { const u = S.roster[udef.id]; if(u.stars < 5){ u.stars += 1; result = `DUPE ➜ ${udef.name} ★${u.stars}` } else { const bonus = 80 + Math.floor(20*Math.random()); S.gold += bonus; result = `Overflow ➜ ${udef.name} → +${bonus} gold` } }
+  return {ok:true, msg:result}
+}
+
+// ===== UI helpers =====
+const el = sel => document.querySelector(sel)
+const logMsg = msg => { S.log.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`); S.log = S.log.slice(0,150); renderLog() }
+
+const computePrestigeHr = (gph, gold) => Math.log10((gold + gph) + 1) - Math.log10(gold + 1)
+const computeTranscendHr = (gph, gold) => (Math.sqrt(gold + gph) - Math.sqrt(gold))
+const eta = (remaining, perHour) => perHour>0 ? (remaining/perHour) : Infinity
+
+const renderTop = () => {
+  const nGold = el('#gold'), nTick = el('#tickets'), nDia = el('#dia'), nEte = el('#ete'), nGph = el('#gph'), nTph = el('#tph')
+  if(nGold) nGold.textContent = F(S.gold)
+  if(nTick) nTick.textContent = S.tickets
+  if(nDia) nDia.textContent = F(S.meta.diamantium)
+  if(nEte) nEte.textContent = F(S.meta.eternium)
+  const p = partyStats()
+  const kps = clamp(p.dps / S.enemy.maxHp, 0, 1000)
+  const gph = baseGoldPerKill(S.enemy.level) * kps * 3600 * (1 + 0.07*S.upgrades.gold) * (1 + p.goldPct)
+  const ch = dropRolls(S.enemy.type, S.enemy.level)
+  const tph = kps * 3600 * ch.ticket
+  if(nGph) nGph.textContent = F(gph)
+  if(nTph) nTph.textContent = F(tph)
+}
+
+const renderEnemy = () => {
+  const et = ENEMY_TYPES.find(e=>e.id===S.enemy.type)
+  const nName = el('#enemyName'), nType = el('#enemyType'), nLvl = el('#enemyLvl'), nBar = el('#hpbar')
+  if(nName) nName.textContent = et?.name || '—'
+  if(nType) nType.textContent = et?.id || '—'
+  if(nLvl) nLvl.textContent = 'Lv '+S.enemy.level
+  const pct = clamp(S.enemy.hp / S.enemy.maxHp, 0, 1)
+  if(nBar) nBar.style.width = (pct*100)+'%'
+  renderDashboard()
+}
+
+const iconFor = role => ({ TANK:SVG.TANK, MAGE:SVG.MAGE, FIGHTER:SVG.FIGHTER }[role])
+
+// ===== Dashboard =====
+const calcMetrics = () => {
+  const p = partyStats()
+  const kps = clamp(p.dps / S.enemy.maxHp, 0, 1000) // kills per second
+  const kpm = kps * 60
+  const ch = dropRolls(S.enemy.type, S.enemy.level)
+  const goldPerKill = baseGoldPerKill(S.enemy.level) * (1 + 0.07*S.upgrades.gold) * (1 + p.goldPct)
+  const gph = goldPerKill * kps * 3600
+  const tph = ch.ticket * kps * 3600
+  const diah = computePrestigeHr(gph, S.gold)
+  const eteh = computeTranscendHr(gph, S.gold)
+  // ETA to next prestige point (10^n)
+  const nDia = Math.floor(Math.log10(S.gold+1))
+  const nextDiaGold = Math.pow(10, nDia+1) - 1
+  const etaDiaH = eta(Math.max(0, nextDiaGold - S.gold), gph)
+  // ETA to next eternium point (sqrt)
+  const nEte = Math.floor(Math.sqrt(S.gold))
+  const nextEteGold = Math.pow(nEte+1, 2)
+  const etaEteH = eta(Math.max(0, nextEteGold - S.gold), gph)
+  return { kpm, ttk: p.dps>0 ? (S.enemy.hp / p.dps) : Infinity, gph, tph, weph: ch.weapon * kps * 3600, arph: ch.armor * kps * 3600, jwph: ch.jewelry * kps * 3600, goldPerKill, dps: p.dps, diah, eteh, etaDiaH, etaEteH }
+}
+
+const renderDashboard = () => {
+  const m = calcMetrics()
+  const grid = el('#dashGrid')
+  if(!grid) return
+  grid.innerHTML = `
+    <div><b>DPS</b>${F(m.dps)}</div>
+    <div><b>Kills/min</b>${m.kpm.toFixed(2)}</div>
+    <div><b>TTK</b>${(m.ttk).toFixed(2)}s</div>
+    <div><b>Gold/kill</b>${F(m.goldPerKill)}</div>
+    <div><b>Gold/hr</b>${F(m.gph)}</div>
+    <div><b>Tickets/hr</b>${F(m.tph)}</div>
+    <div><b>Weapons/hr</b>${m.weph.toFixed(2)}</div>
+    <div><b>Armor/hr</b>${m.arph.toFixed(2)}</div>
+    <div><b>Jewelry/hr</b>${m.jwph.toFixed(2)}</div>
+    <div><b>Diamantium/hr</b>${m.diah.toFixed(3)}</div>
+    <div><b>Eternium/hr</b>${m.eteh.toFixed(3)}</div>
+    <div><b>ETA +1 Dia</b>${m.etaDiaH===Infinity?'—':(m.etaDiaH.toFixed(2)+'h')}</div>
+    <div><b>ETA +1 Ete</b>${m.etaEteH===Infinity?'—':(m.etaEteH.toFixed(2)+'h')}</div>
+  `
+}
+
+// ===== Charts (sparklines) =====
+const HIST = { dps:[], gph:[], tph:[] }
+const MAX_POINTS = 120 // ~2 minutes at 1s sampling
+function pushHist(){
+  const m = calcMetrics()
+  HIST.dps.push(m.dps); if(HIST.dps.length>MAX_POINTS) HIST.dps.shift()
+  HIST.gph.push(m.gph); if(HIST.gph.length>MAX_POINTS) HIST.gph.shift()
+  HIST.tph.push(m.tph); if(HIST.tph.length>MAX_POINTS) HIST.tph.shift()
+}
+function drawSpark(id, arr){
+  const svg = el('#'+id); if(!svg) return
+  const w = 200, h = 60; svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+  const n = arr.length; if(n<2){ svg.innerHTML=''; return }
+  let min = Math.min(...arr), max = Math.max(...arr); if(min===max){ min = 0 }
+  const pts = arr.map((v,i)=>{
+    const x = i*(w-4)/(n-1)+2; const y = h-2 - ((v-min)/(max-min||1))*(h-4); return `${x.toFixed(2)},${y.toFixed(2)}`
+  }).join(' ')
+  svg.innerHTML = `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" opacity="0.9"/>>`
+}
+function drawAllSparks(){ drawSpark('chartDps', HIST.dps); drawSpark('chartGold', HIST.gph); drawSpark('chartTickets', HIST.tph) }
+
+// ===== Prestige / Transcend =====
+const prestigeEarned = () => Math.floor(Math.log10(S.gold+1))
+const transcendEarned = () => Math.floor(Math.sqrt(S.gold))
+const prestigeGoldReq = () => Math.floor(10000 * Math.pow(1.6, (S.meta?.prestiges||0)))
+
+function prestigeRequirements(){
+  const needGold = prestigeGoldReq()
+  const goldOk = S.gold >= needGold
+  const starsOk = partyUnits().every(u => u.stars >= 5)                  // NEW
+  const jewelsOk = partyUnits().every(u => u.jewelry.filter(Boolean).length === 3) // keep
+  return { goldOk, starsOk, jewelsOk, needGold }                         // UPDATED
+}
+
+const canPrestige = () => {
+  const r = prestigeRequirements()
+  return r.goldOk && r.starsOk && r.jewelsOk                             
+}
+const canTranscend = () => S.meta.diamantium >= 25
+
+const prestigeReset = () => {
+  if(!canPrestige()) return;
+  const earned = prestigeEarned();
+  S.meta.diamantium += earned;
+  S.meta.prestiges = (S.meta.prestiges||0) + 1;
+  Object.values(S.roster).forEach(u => { u.prestige += 1; u.level = 1; u.stars = 1; u.bestWeapon=0; u.bestArmor=0; u.jewelry=[null,null,null] });
+  S.gold = 0; S.tickets = 0; S.upgrades = { dps:0, gold:0, crit:0 }; S.inventory={jewelry:{}};
+  logMsg(`Prestige! Diamantium +${earned}. Party reset. Next threshold ≥ ${F(prestigeGoldReq())} gold`);
+  spawnEnemy(); save(); render()
+}
+const transcendReset = () => { if(!canTranscend()) return; const earned = transcendEarned(); S.meta.eternium += earned; Object.values(S.roster).forEach(u => { u.transcend += 1; u.prestige = 0; u.level = 1; u.stars = 1; u.bestWeapon=0; u.bestArmor=0; u.jewelry=[null,null,null] }); S.gold = 0; S.tickets = 0; S.upgrades = { dps:0, gold:0, crit:0 }; S.inventory={jewelry:{}}; logMsg(`Eternium +${earned}. Reality shattered.`); spawnEnemy(); save(); render() }
+
+const renderResets = () => {
+  const wrap = el('#resets')
+  const diaEarn = prestigeEarned()
+  const eteEarn = transcendEarned()
+  const req = prestigeRequirements()
+  wrap.innerHTML = `
+    <div class="row">
+      <div style="max-width:65%">
+        <b>Prestige ➜ Diamantium</b>
+          <div class="tiny clamp2">
+            Reset party; grants Diamantium; requires ALL:
+            <span class="nowrap">≥ ${F(req.needGold)} gold</span>,
+            <span class="nowrap">5★ each</span>,
+            and <span class="nowrap">3/3 jewels on each</span>.
+            Cost threshold scales each prestige.
+          </div>
+          <div class="tiny" style="margin-top:.25rem">
+            <span class="${req.goldOk?'':'miss'}">
+              ${req.goldOk?'✓':'✗'} Gold ≥ ${F(req.needGold)} (you: ${F(S.gold)})
+            </span>
+            <span class="tag" style="margin-left:.5rem; ${req.starsOk?'color:var(--good)':'color:var(--bad)'}">
+              ${req.starsOk?'✓':'✗'} 5★ each
+            </span>
+            <span class="tag" style="margin-left:.25rem; ${req.jewelsOk?'color:var(--good)':'color:var(--bad)'}">
+              ${req.jewelsOk?'✓':'✗'} 3 jewels each
+            </span>
+          </div>
+      <div>
+        <button class="btn" id="btnPrestige" ${canPrestige()?'':'disabled'} title="${canPrestige()?'Gain '+diaEarn+' Dia':'Meet all requirements to prestige'}">Prestige</button>
+        <div class="tiny">Potential: +${diaEarn} Dia</div>
+      </div>
+    </div>
+    <div class="row">
+      <div><b>Transcend ➜ Eternium</b><div class="tiny">Resets deeper; requires 25 Diamantium. Grants Eternium; bigger multipliers.</div></div>
+      <div>
+        <button class="btn" id="btnTranscend" ${canTranscend()?'':'disabled'} title="${canTranscend()?'Gain ~'+eteEarn+' Ete':'Need 25 Diamantium'}">Transcend</button>
+      </div>
+    </div>
+  `
+  const b1 = el('#btnPrestige'), b2 = el('#btnTranscend')
+  if(b1) b1.onclick = prestigeReset
+  if(b2) b2.onclick = transcendReset
+}
+
+// ===== Rendering =====
+function formatJewel(j){
+  if(!j) return '—'
+  const eff = Object.entries(j.effects).map(([k,v])=>{ if(k==='armorToDpsPct') return `A→D ${Math.round(v*100)}%`; return `${k.replace('Pct','')} +${Math.round(v*100)}%` }).join(' • ')
+  return `${j.name} [${j.role}] <span class="tiny">(cap ${j.tier}) • ${eff}</span>`
+}
+
+const renderParty = () => {
+  const wrap = el('#partyList')
+  if(!wrap) return
+  wrap.innerHTML = ''
+  const m = calcMetrics()
+  partyUnits().forEach(u => {
+    const st = computeUnitStats(u)
+    const lvlCost = levelUpCost(u.level)
+    const can = S.gold >= lvlCost
+    const miss = Math.max(0, lvlCost - S.gold)
+    const share = m.dps>0 ? (computeUnitStats(u).effDps / m.dps) : 0
+    const etaLevelH = m.gph>0 ? (miss / m.gph) : Infinity
+    const card = document.createElement('div')
+    card.className = 'panel'
+    const j0 = u.jewelry[0] && S.inventory.jewelry[u.jewelry[0]]
+    const j1 = u.jewelry[1] && S.inventory.jewelry[u.jewelry[1]]
+    const j2 = u.jewelry[2] && S.inventory.jewelry[u.jewelry[2]]
+    const equippedCount = u.jewelry.filter(Boolean).length
+    card.innerHTML = `
+      <div class="char">
+        ${iconFor(u.role)}
+        <div class="meta">
+          <div><b>${u.name}</b> <span class="role ${u.role}">${u.role}</span> <span class="stars">${'★'.repeat(u.stars)}</span> <span class="tiny">Prestige ${u.prestige} • Transcend ${u.transcend}</span></div>
+          <div class="tiny">Lv ${u.level} • Armory Power: <b>${Math.floor(u.bestWeapon+u.bestArmor)}</b> • DPS Share: ${(share*100).toFixed(1)}% • ETA Lvl: ${etaLevelH===Infinity?'—':etaLevelH.toFixed(2)+'h'}</div>
+        </div>
+        <div>
+          <button class="btn" data-act="level" data-id="${u.id}" ${can?'':'disabled'} title="${can?'Level up':'Need '+F(miss)+' gold'}">Level Up <small>(${F(lvlCost)})</small></button>
+          ${!can?`<div class="miss tiny">Need ${F(miss)}</div>`:''}
+        </div>
+      </div>
+      <div class="kv">
+        <div><b>DPS</b>${F(st.effDps)}</div>
+        <div><b>HP</b>${F(st.hp)}</div>
+        <div><b>EHP</b>${F(st.ehp)}</div>
+        <div><b>Crit</b>${Math.round(st.crit*100)}%</div>
+        <div><b>Armor</b>${F(st.armor)}</div>
+        <div><b>Jewelry</b>${equippedCount}/3</div>
+      </div>
+      <div class="vlist" style="margin-top:.4rem">
+        <div class="row tiny" style="align-items:flex-start"><div>Jewels:</div><div style="text-align:right">${[j0,j1,j2].map(j=>`<div>${formatJewel(j)}</div>`).join('')}</div></div>
+      </div>
+    `
+    wrap.appendChild(card)
+  })
+  wrap.querySelectorAll('button[data-act="level"]').forEach(b => b.addEventListener('click', onLevelUp))
+}
+
+const renderUpgrades = () => {
+  const wrap = el('#upgrades')
+  if(!wrap) return
+  wrap.innerHTML = ''
+  const defs = [
+    {key:'dps', name:'Global DPS %', desc:'+5% party DPS per level'},
+    {key:'gold', name:'Global Gold %', desc:'+7% gold per level'},
+    {key:'crit', name:'Global Crit', desc:'+1% crit chance per level (capped)'}
+  ]
+  const upgradeCost = (key, lvl) => ({dps:100, gold:120, crit:150}[key] * Math.pow(1.35, lvl))|0
+  defs.forEach(d => {
+    const lvl = S.upgrades[d.key]
+    const cost = upgradeCost(d.key, lvl)
+    const can = S.gold >= cost
+    const miss = Math.max(0, cost - S.gold)
+    const row = document.createElement('div')
+    row.className = 'row'
+    row.innerHTML = `
+      <div style="max-width:65%"><b class="truncate">${d.name}</b> <span class="tiny">Lv ${lvl}</span><div class="tiny clamp2">${d.desc}</div></div>
+      <div>
+        <button class="btn" data-upg="${d.key}" ${can?'':'disabled'} title="${can?'Buy upgrade':'Need '+F(miss)+' gold'}">Buy <small>(${F(cost)})</small></button>
+        ${!can?`<div class="miss tiny">Need ${F(miss)}</div>`:''}
+      </div>
+    `
+    wrap.appendChild(row)
+  })
+  wrap.querySelectorAll('button[data-upg]').forEach(b => b.addEventListener('click', onBuyUpgrade))
+}
+
+const renderJewelryBag = () => {
+  const bag = el('#jewelryBag')
+  if(!bag) return
+  const list = Object.values(S.inventory.jewelry)
+  if(list.length===0){ bag.textContent = 'No jewelry yet'; return }
+  bag.innerHTML = list.map(j => {
+    const inUse = partyUnits().find(u => u.jewelry.includes(j.id))
+    const badge = inUse?`<span class="tag">equipped</span>`:''
+    const eff = Object.entries(j.effects).map(([k,v])=>{ if(k==='armorToDpsPct') return `Armor→DPS ${Math.round(v*100)}%`; return `${k.replace('Pct','')} +${Math.round(v*100)}%` }).join(' • ')
+    return `<div>• <b>${j.name}</b> [${j.role}] cap Lv ${j.tier} ${badge}<br><span class="tiny">${eff}</span></div>`
+  }).join('')
+}
+
+const renderLog = () => { const n = el('#log'); if(n) n.innerHTML = S.log.map(x=>`<div>${x}</div>`).join('') }
+
+const onLevelUp = e => { const id = e.currentTarget.getAttribute('data-id'); const u = S.roster[id]; const cost = levelUpCost(u.level); if(S.gold >= cost){ S.gold -= cost; u.level += 1; autoManageJewelry(); save(); render() } }
+const onBuyUpgrade = e => { const key = e.currentTarget.getAttribute('data-upg'); const lvl = S.upgrades[key]; const cost = ({dps:100, gold:120, crit:150}[key] * Math.pow(1.35, lvl))|0; if(S.gold >= cost){ S.gold -= cost; S.upgrades[key] += 1; save(); render() } }
+const renderGachaResult = txt => { const box = el('#gachaResults'); if(!box) return; const line = document.createElement('div'); line.textContent = '• '+txt; box.prepend(line) }
+
+const bindTopBar = () => {
+  const sBtn = el('#saveBtn'), rBtn = el('#resetBtn'), dBtn = el('#devRun'), p1 = el('#pull1'), p10 = el('#pull10')
+  if(sBtn) sBtn.addEventListener('click', save)
+  if(rBtn) rBtn.addEventListener('click', resetAll)
+  if(dBtn) dBtn.addEventListener('click', () => runDev(el('#devInput').value))
+  if(p1) p1.addEventListener('click', () => { const r = summonOnce(); if(r.ok){ renderGachaResult(r.msg); render(); save() } })
+  if(p10) p10.addEventListener('click', () => { let c = 0; while(c++<10 && S.tickets>0){ const r = summonOnce(); if(r.ok) renderGachaResult(r.msg) } render(); save() })
+}
+
+const runDev = cmd => {
+  if(!cmd) return
+  const [key, valRaw] = cmd.trim().split(/\s+/)
+  const val = Number(valRaw||0)
+  if(key==='tickets'){ S.tickets += (val||1); logMsg(`DEV: +${val||1} tickets`) }
+  else if(key==='gold'){ S.gold += (val||0); logMsg(`DEV: +${val||0} gold`) }
+  else if(key==='win'){ S.enemy.hp = 1; logMsg('DEV: finishing current enemy') }
+  else if(key==='jewelry'){ awardJewelry() }
+  else if(key==='diam' || key==='dia'){ S.meta.diamantium += (val||1); logMsg(`DEV: +${val||1} Diamantium`) }
+  else if(key==='ete' || key==='eternium'){ S.meta.eternium += (val||1); logMsg(`DEV: +${val||1} Eternium`) }
+  const di = el('#devInput'); if(di) di.value = ''
+  render(); save()
+}
+
+// ===== Main Loop & Rendering =====
+let loopHandle = null, sampleTimer = 0
+const loop = () => {
+  const t = now(); const dt = Math.min(1, (t - S.lastTick)/1000); S.lastTick = t; sampleTimer += dt
+  tick(dt); renderTop(); renderEnemy(); renderResets();
+  if(sampleTimer >= 1){ sampleTimer = 0; pushHist(); drawAllSparks() }
+}
+const renderAll = () => { renderTop(); renderEnemy(); renderUpgrades(); renderParty(); renderJewelryBag(); renderResets(); drawAllSparks() }
+const render = () => renderAll()
+
+// ===== Simple Smoke Tests =====
+function runTests(){
+  const results = []
+  const A = (cond, name) => { results.push({name, pass: !!cond}); if(!cond) console.error('TEST FAIL:', name) }
+  try { A(typeof render === 'function', 'render() exists'); } catch(e){ A(false, 'render() exists threw') }
+  try { renderAll(); A(true, 'renderAll() callable'); } catch(e){ A(false, 'renderAll() callable threw') }
+  A(starMult(5) > starMult(1), 'starMult grows with stars')
+  A(Math.abs(starMult(5) - Math.pow(1.8,4)) < 1e-9, 'starMult uses 1.8^(★-1)')
+  A(levelUpCost(2) > levelUpCost(1), 'levelUpCost increases with level')
+  const u0 = S.roster[S.active[0]]; const st0 = computeUnitStats(u0); A(st0.armor >= 0 && st0.ehp >= st0.hp, 'EHP >= HP with armor')
+  // Prestige threshold sanity
+  A(prestigeGoldReq() >= 10000, 'Prestige threshold ≥ 10k')
+  // Auto-jewelry: awarding a piece should equip up to 3 across party and never duplicate on same slot owner
+  const before = partyUnits().map(u=>u.jewelry.filter(Boolean).length).reduce((a,b)=>a+b,0)
+  awardJewelry(); const after = partyUnits().map(u=>u.jewelry.filter(Boolean).length).reduce((a,b)=>a+b,0)
+  A(after >= before, 'Auto-equip does not reduce equipped count')
+  // No legacy ids
+  const legacy = ['gravortoise','nebuline','razorloom']
+  A(!UNIT_POOL.some(u => legacy.includes(u.id)), 'UNIT_POOL has no legacy ids')
+  A(!S.active.some(id => legacy.includes(id)), 'Active party has only updated ids')
+  const testU = S.roster[S.active[0]]
+  const stBefore = computeUnitStats(testU).effDps; const prevWeapon = testU.bestWeapon; testU.bestWeapon += 100; const stAfter = computeUnitStats(testU).effDps; A(stAfter > stBefore, 'Armory Power (weapon) increases DPS'); testU.bestWeapon = prevWeapon
+  const eBefore = computeUnitStats(testU).ehp; const prevArmor = testU.bestArmor; testU.bestArmor += 50; const eAfter = computeUnitStats(testU).ehp; A(eAfter > eBefore, 'Armory Power (armor) increases EHP'); testU.bestArmor = prevArmor
+  const m = calcMetrics(); A(m.gph >= 0 && m.tph >= 0 && isFinite(m.kpm), 'calcMetrics returns sane numbers')
+  // flashSave must be safe without #savestatus
+  try { flashSave('ok'); A(true, 'flashSave() null-safe without #savestatus') } catch(e){ A(false, 'flashSave() threw without #savestatus') }
+  const passCount = results.filter(r=>r.pass).length
+  console.log(`Tests: ${passCount}/${results.length} passed`, results)
+  logMsg(`Self-tests: ${passCount}/${results.length} passed`)
+}
+
+const start = () => { load(); bindTopBar(); if(!S.enemy || !S.enemy.hp) spawnEnemy(); autoManageJewelry(); renderAll(); runTests(); loopHandle = setInterval(loop, 250); setInterval(save, 10000) }
+
+// ===== Boot (load-guard) =====
+window.addEventListener('load', start)
+</script>
+</body>
+</html>
