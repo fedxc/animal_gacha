@@ -377,6 +377,8 @@ function autoManageJewelry(){
     // Equip
     u.jewelry = [picks[0]?.id || null, picks[1]?.id || null, picks[2]?.id || null]
   }
+  if(typeof renderParty === 'function') renderParty()
+  if(typeof renderJewelryBag === 'function') renderJewelryBag()
 }
 
 // ===== Battle & Drops =====
