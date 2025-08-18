@@ -63,21 +63,21 @@ export const renderDashboard = () => {
   const m = calcMetrics()
   const grid = el('#dashGrid')
   if (!grid) return
-  grid.innerHTML = `
-    <div><b>DPS</b>${F(m.dps)}</div>
-    <div><b>Kills/min</b>${m.kpm.toFixed(2)}</div>
-    <div><b>TTK</b>${m.ttk.toFixed(2)}s</div>
-    <div><b>Gold/kill</b>${F(m.goldPerKill)}</div>
-    <div><b>Gold/hr</b>${F(m.gph)}</div>
-    <div><b>Tickets/hr</b>${F(m.tph)}</div>
-    <div><b>Weapons/hr</b>${m.weph.toFixed(2)}</div>
-    <div><b>Armor/hr</b>${m.arph.toFixed(2)}</div>
-    <div><b>Jewelry/hr</b>${m.jwph.toFixed(2)}</div>
-    <div><b>Diamantium/hr</b>${m.diah.toFixed(3)}</div>
-    <div><b>Eternium/hr</b>${m.eteh.toFixed(3)}</div>
-    <div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : m.etaDiaH.toFixed(2) + 'h'}</div>
-    <div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : m.etaEteH.toFixed(2) + 'h'}</div>
-  `
+  grid.innerHTML = [
+    `<div><b>DPS</b>${F(m.dps)}</div>`,
+    `<div><b>Kills/min</b>${m.kpm.toFixed(2)}</div>`,
+    `<div><b>TTK</b>${m.ttk.toFixed(2)}s</div>`,
+    `<div><b>Gold/kill</b>${F(m.goldPerKill)}</div>`,
+    `<div><b>Gold/hr</b>${F(m.gph)}</div>`,
+    `<div><b>Tickets/hr</b>${F(m.tph)}</div>`,
+    `<div><b>Weapons/hr</b>${m.weph.toFixed(2)}</div>`,
+    `<div><b>Armor/hr</b>${m.arph.toFixed(2)}</div>`,
+    `<div><b>Jewelry/hr</b>${m.jwph.toFixed(2)}</div>`,
+    `<div><b>Diamantium/hr</b>${m.diah.toFixed(3)}</div>`,
+    `<div><b>Eternium/hr</b>${m.eteh.toFixed(3)}</div>`,
+    `<div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : m.etaDiaH.toFixed(2) + 'h'}</div>`,
+    `<div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : m.etaEteH.toFixed(2) + 'h'}</div>`,
+  ].join('')
 }
 
 function drawSpark(id, arr) {
