@@ -116,30 +116,27 @@ export const renderResets = () => {
   const eteEarn = transcendEarned()
   const req = prestigeRequirements()
   wrap.innerHTML = `
-    <div class="row">
-      <div style="max-width:65%">
-        <b>Prestige ➜ Diamantium</b>
-        <div class="tiny clamp2">
-          Reset party; grants Diamantium; requires ALL:
-          <span class="nowrap">≥ ${F(req.needGold)} gold</span>,
-          <span class="nowrap">5★ each</span>, and
-          <span class="nowrap">3/3 jewels on each</span>.
-          Cost threshold scales each prestige.
-        </div>
-        <div class="tiny" style="margin-top:.25rem">
-          <span class="${req.goldOk ? '' : 'miss'}">${req.goldOk ? '✓' : '✗'} Gold ≥ ${F(req.needGold)} (you: ${F(S.gold)})</span>
-          <span class="tag" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.starsOk ? '✓' : '✗'} 5★ each</span>
-          <span class="tag" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.jewelsOk ? '✓' : '✗'} 3 jewels each</span>
-        </div>
+    <div class="reset-block">
+      <b>Prestige ➜ Diamantium</b>
+      <div class="tiny clamp2">
+        Reset party; grants Diamantium; requires ALL:
+        <span class="nowrap">≥ ${F(req.needGold)} gold</span>,
+        <span class="nowrap">5★ each</span>, and
+        <span class="nowrap">3/3 jewels on each</span>.
+        Cost threshold scales each prestige.
       </div>
-      <div>
-        <button class="btn" id="btnPrestige" ${canPrestige() ? '' : 'disabled'} title="${canPrestige() ? 'Gain ' + diaEarn + ' Dia' : 'Meet all requirements to prestige'}">Prestige</button>
-        <div class="tiny">Potential: +${diaEarn} Dia</div>
+      <div class="tiny" style="margin-top:.25rem">
+        <span class="${req.goldOk ? '' : 'miss'}">${req.goldOk ? '✓' : '✗'} Gold ≥ ${F(req.needGold)} (you: ${F(S.gold)})</span>
+        <span class="tag" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.starsOk ? '✓' : '✗'} 5★ each</span>
+        <span class="tag" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.jewelsOk ? '✓' : '✗'} 3 jewels each</span>
       </div>
+      <button class="btn" id="btnPrestige" ${canPrestige() ? '' : 'disabled'} title="${canPrestige() ? 'Gain ' + diaEarn + ' Dia' : 'Meet all requirements to prestige'}">Prestige</button>
+      <div class="tiny">Potential: +${diaEarn} Dia</div>
     </div>
-    <div class="row">
-      <div><b>Transcend ➜ Eternium</b><div class="tiny">Resets deeper; requires 25 Diamantium. Grants Eternium; bigger multipliers.</div></div>
-      <div><button class="btn" id="btnTranscend" ${canTranscend() ? '' : 'disabled'} title="${canTranscend() ? 'Gain ~' + eteEarn + ' Ete' : 'Need 25 Diamantium'}">Transcend</button></div>
+    <div class="reset-block">
+      <b>Transcend ➜ Eternium</b>
+      <div class="tiny">Resets deeper; requires 25 Diamantium. Grants Eternium; bigger multipliers.</div>
+      <button class="btn" id="btnTranscend" ${canTranscend() ? '' : 'disabled'} title="${canTranscend() ? 'Gain ~' + eteEarn + ' Ete' : 'Need 25 Diamantium'}">Transcend</button>
     </div>
   `
   const b1 = el('#btnPrestige'),
