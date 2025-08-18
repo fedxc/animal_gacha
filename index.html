@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Idle Alien-Animals – AFK RPG</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="topbar">
+        <div class="pill-row">
+          <div class="stat-pill" title="Gold">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M12 3c4.97 0 9 1.79 9 4s-4.03 4-9 4s-9-1.79-9-4s4.03-4 9-4m0 10c4.97 0 9 1.79 9 4s-4.03 4-9 4s-9-1.79-9-4s4.03-4 9-4"
+                opacity=".35"
+              />
+              <ellipse cx="12" cy="7" rx="9" ry="4" />
+            </svg>
+            <div>Gold: <strong id="gold">0</strong></div>
+          </div>
+          <div class="stat-pill" title="Gold/hr">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"
+              />
+            </svg>
+            <div>Gold/hr: <strong id="gph">0</strong></div>
+          </div>
+          <div class="stat-pill" title="Tickets">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M2 10c1.1 0 2-.9 2-2s.9-2 2-2h8l4 4h2a2 2 0 0 1 2 2v2h-2l-4 4H6a2 2 0 0 1-2-2c0-1.1-.9-2-2-2v-4Z"
+              />
+            </svg>
+            <div>Tickets: <strong id="tickets">0</strong></div>
+          </div>
+          <div class="stat-pill" title="Tickets/hr">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M2 10c1.1 0 2-.9 2-2s.9-2 2-2h8l4 4h2a2 2 0 0 1 2 2v2h-2l-4 4H6a2 2 0 0 1-2-2c0-1.1-.9-2-2-2v-4Z"
+              />
+            </svg>
+            <div>TPH: <strong id="tph">0</strong></div>
+          </div>
+        </div>
+        <div class="pill-row">
+          <div class="stat-pill" title="Diamantium">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 2l8 6l-3 10H7L4 8l8-6z" />
+            </svg>
+            <div>Dia: <strong id="dia">0</strong></div>
+          </div>
+          <div class="stat-pill" title="Eternium">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 2l4 8l8 4l-8 4l-4 8l-4-8L0 14l8-4z" />
+            </svg>
+            <div>Ete: <strong id="ete">0</strong></div>
+          </div>
+          <button class="btn" id="saveBtn" title="Save">Save</button>
+          <button class="btn bad" id="resetBtn" title="Hard Reset">Reset</button>
+        </div>
+        <div class="tiny nowrap">
+          Idle Alien-Animals • v0.4.0 • auto-jewelry • prestige requirements • layout clamps
+        </div>
+      </div>
+
+      <div class="grid cols-3" style="margin-top: 0.6rem">
+        <div class="panel section" id="partyPanel">
+          <h1>Party <small>(3 active)</small></h1>
+          <div id="partyList" class="vlist"></div>
+          <div class="tiny">
+            Armory Power ➜ best weapon & armor applied automatically. Jewelry is unique &
+            auto-equipped; view-only on the card.
+          </div>
+        </div>
+
+        <div class="panel section">
+          <h1>Battle & Dashboard</h1>
+          <div class="vlist">
+            <div class="row">
+              <div class="truncate">
+                Enemy: <b id="enemyName">—</b> <span id="enemyLvl" class="tag">Lv 1</span>
+              </div>
+              <div>Type: <span id="enemyType" class="tag">—</span></div>
+            </div>
+            <div class="hpbar"><i id="hpbar" style="width: 100%"></i></div>
+            <div id="dashGrid" class="kv" style="grid-template-columns: repeat(6, 1fr)"></div>
+            <div class="charts">
+              <div class="chart">
+                <div class="tiny">DPS (last ~2m)</div>
+                <svg id="chartDps" viewBox="0 0 200 60"></svg>
+              </div>
+              <div class="chart">
+                <div class="tiny">Gold/hr (last ~2m)</div>
+                <svg id="chartGold" viewBox="0 0 200 60"></svg>
+              </div>
+              <div class="chart">
+                <div class="tiny">Tickets/hr (last ~2m)</div>
+                <svg id="chartTickets" viewBox="0 0 200 60"></svg>
+              </div>
+            </div>
+            <div class="log" id="log"></div>
+          </div>
+        </div>
+
+        <div class="panel section">
+          <h1>Upgrades</h1>
+          <div class="vlist" id="upgrades"></div>
+          <h2>Resets</h2>
+          <div class="vlist" id="resets"></div>
+          <h2>Gacha</h2>
+          <div class="row">
+            <div>
+              <button class="btn" id="pull1">Summon ×1</button>
+              <button class="btn" id="pull10">Summon ×10</button>
+            </div>
+            <small
+              >Units: 1★ base. Duplicates increase ★ up to 5★ (each ★ is a huge power spike).</small
+            >
+          </div>
+          <div id="gachaResults" class="inv tiny"></div>
+        </div>
+      </div>
+
+      <div class="panel section" id="jewelryPanel" style="margin-top: 0.6rem">
+        <h1>Jewelry Bag</h1>
+        <div id="jewelryBag" class="inv tiny"></div>
+      </div>
+
+      <details class="details-dev">
+        <summary>Developer Tools (click to open)</summary>
+        <div class="codebox" style="margin-top: 0.4rem">
+          <input
+            id="devInput"
+            type="text"
+            placeholder="dev: tickets 50 | gold 1e6 | win | diam 10 | ete 1 | jewelry"
+          />
+          <button class="btn" id="devRun">Run</button>
+        </div>
+      </details>
+
+      <div id="toast" aria-live="polite"></div>
+
+      <div class="foot tiny">
+        Tip: each character has 3 jewelry slots. Jewelry has item level and minimum unit level;
+        best-in-bag is auto-equipped per unit & role.
+      </div>
+    </div>
+
+    <template id="party-card">
+      <div class="panel">
+        <div class="char">
+          <div class="icon"></div>
+          <div class="meta">
+            <div class="name"></div>
+            <div class="tiny info"></div>
+          </div>
+          <div class="actions">
+            <button class="btn level"></button>
+            <div class="miss tiny"></div>
+          </div>
+        </div>
+        <div class="kv stats">
+          <div><b>DPS</b><span class="dps"></span></div>
+          <div><b>HP</b><span class="hp"></span></div>
+          <div><b>EHP</b><span class="ehp"></span></div>
+          <div><b>Crit</b><span class="crit"></span></div>
+          <div><b>Armor</b><span class="armor"></span></div>
+          <div><b>Jewelry</b><span class="jcount"></span></div>
+        </div>
+        <div class="vlist" style="margin-top: 0.4rem">
+          <div class="row tiny" style="align-items: flex-start">
+            <div>Jewels:</div>
+            <div class="jewels" style="text-align: right"></div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template id="upgrade-row">
+      <div class="row">
+        <div class="info"></div>
+        <div class="actions">
+          <button class="btn buy"></button>
+          <div class="miss tiny"></div>
+        </div>
+      </div>
+    </template>
+
+    <script type="module" src="scripts/app.js"></script>
+  </body>
+</html>
