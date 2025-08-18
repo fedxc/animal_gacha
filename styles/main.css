@@ -111,7 +111,7 @@ small {
   gap: var(--grid-gap);
 }
 .cols-3 {
-  grid-template-columns: 2fr 3fr 2fr;
+  grid-template-columns: minmax(260px, 2fr) minmax(420px, 3fr) minmax(260px, 2fr);
 }
 .cols-2 {
   grid-template-columns: repeat(2, 1fr);
@@ -217,6 +217,16 @@ small {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
+}
+.row > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.row .info {
+  flex: 1;
+}
+.row .actions {
+  flex-shrink: 0;
 }
 .row .miss {
   color: var(--bad);
