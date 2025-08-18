@@ -71,12 +71,18 @@
       </div>
 
       <div class="grid cols-3" style="margin-top: 0.6rem">
-        <div class="panel section" id="partyPanel">
-          <h1>Party <small>(3 active)</small></h1>
-          <div id="partyList" class="vlist"></div>
-          <div class="tiny">
-            Armory Power ➜ best weapon & armor applied automatically. Jewelry is unique &
-            auto-equipped; view-only on the card.
+        <div class="col-stack">
+          <div class="panel section" id="partyPanel">
+            <h1>Party <small>(3 active)</small></h1>
+            <div id="partyList" class="vlist"></div>
+            <div class="tiny">
+              Armory Power ➜ best weapon & armor applied automatically. Jewelry is unique &
+              auto-equipped; view-only on the card.
+            </div>
+          </div>
+          <div class="panel section" id="jewelryPanel">
+            <h1>Jewelry Bag</h1>
+            <div id="jewelryBag" class="inv tiny"></div>
           </div>
         </div>
 
@@ -109,28 +115,25 @@
           </div>
         </div>
 
-        <div class="panel section">
-          <h1>Upgrades</h1>
-          <div class="vlist" id="upgrades"></div>
-          <h2>Resets</h2>
-          <div class="vlist" id="resets"></div>
-          <h2>Gacha</h2>
-          <div class="row">
-            <div>
-              <button class="btn" id="pull1">Summon ×1</button>
-              <button class="btn" id="pull10">Summon ×10</button>
+        <div class="col-stack">
+          <div class="panel section">
+            <h1>Upgrades</h1>
+            <div class="vlist" id="upgrades"></div>
+            <h2>Resets</h2>
+            <div class="vlist" id="resets"></div>
+            <h2>Gacha</h2>
+            <div class="row">
+              <div>
+                <button class="btn" id="pull1">Summon ×1</button>
+                <button class="btn" id="pull10">Summon ×10</button>
+              </div>
+              <small
+                >Units: 1★ base. Duplicates increase ★ up to 5★ (each ★ is a huge power spike).</small
+              >
             </div>
-            <small
-              >Units: 1★ base. Duplicates increase ★ up to 5★ (each ★ is a huge power spike).</small
-            >
+            <div id="gachaResults" class="inv tiny"></div>
           </div>
-          <div id="gachaResults" class="inv tiny"></div>
         </div>
-      </div>
-
-      <div class="panel section" id="jewelryPanel" style="margin-top: 0.6rem">
-        <h1>Jewelry Bag</h1>
-        <div id="jewelryBag" class="inv tiny"></div>
       </div>
 
       <details class="details-dev">

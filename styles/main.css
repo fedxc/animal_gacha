@@ -111,10 +111,15 @@ small {
   gap: var(--grid-gap);
 }
 .cols-3 {
-  grid-template-columns: 3fr 2fr 3fr;
+  grid-template-columns: 2fr 3fr 2fr;
 }
 .cols-2 {
   grid-template-columns: repeat(2, 1fr);
+}
+.col-stack {
+  display: grid;
+  gap: var(--grid-gap);
+  align-content: start;
 }
 .panel {
   background: linear-gradient(180deg, var(--panel), var(--panel-2));
@@ -268,6 +273,19 @@ select {
   padding: 0.4rem;
   border-radius: 10px;
   background: #0b0f16;
+}
+.reset-block {
+  background: #0e1420;
+  border: 1px dashed #ffffff12;
+  padding: 0.5rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reset-block button {
+  align-self: flex-start;
 }
 .log {
   max-height: 180px;
