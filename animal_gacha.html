@@ -146,7 +146,7 @@
 
   <div id="toast" aria-live="polite"></div>
 
-  <div class="foot tiny">Tip: each character has 3 jewelry slots. Pieces cap at a level (tier). Low-tier items auto-sell; best-in-bag is auto-equipped per unit & role.</div>
+  <div class="foot tiny">Tip: each character has 3 jewelry slots. Jewelry has item level and minimum unit level; best-in-bag is auto-equipped per unit & role.</div>
 </div>
 
 <script>
@@ -214,6 +214,14 @@ const load = () => {
     UNIT_POOL.slice(0,3).forEach(u => S.roster[u.id] = seedUnit(u))
   }
   if(!S.inventory) S.inventory = {jewelry:{}}
+  // Jewelry migration: convert old tier-based pieces to itemLevel/minUnitLevel
+  Object.values(S.inventory.jewelry).forEach(j => {
+    if(j){
+      if(typeof j.itemLevel !== 'number') j.itemLevel = Math.max(1, j.tier || 1)
+      if(typeof j.minUnitLevel !== 'number') j.minUnitLevel = Math.max(1, j.tier || 1)
+      delete j.tier
+    }
+  })
   if(!S.upgrades) S.upgrades = {dps:0, gold:0, crit:0}
   if(!S.active) S.active = Object.keys(S.roster).slice(0,3)
   if(!S.meta) S.meta = {diamantium:0, eternium:0, prestiges:0}
@@ -267,7 +275,7 @@ const applyJewelry = (unit, stats, jIds=null) => {
     if(!jid) return
     const j = S.inventory.jewelry[jid]
     if(!j) return
-    const scale = Math.min(unit.level, j.tier) / j.tier
+    const scale = 1 + 0.08 * Math.pow(j.itemLevel, 0.85)
     add.dpsPct += (j.effects.dpsPct||0) * scale
     add.goldPct += (j.effects.goldPct||0) * scale
     add.armorPct += (j.effects.armorPct||0) * scale
@@ -312,12 +320,12 @@ const computeUnitStatsWithJewels = (unit, jIds) => {
 
 const partyUnits = () => S.active.map(id => S.roster[id]).filter(Boolean)
 const partyStats = () => { let p = { dps:0, goldPct:0 }; partyUnits().forEach(u => { const st = computeUnitStats(u); p.dps += st.effDps; p.goldPct += st.goldPct }); return p }
-const partyMinLevel = () => Math.min(...partyUnits().map(u=>u.level)) || 1
 
 // ===== Jewelry Auto-Management =====
 let _jid_counter = 1
 const makeJewelry = (forRole, lvl) => {
-  const tier = Math.max(5, Math.round(lvl/5)*5)
+  const minUnitLevel = Math.max(1, Math.round(lvl/5)*5)
+  const itemLevel = minUnitLevel
   const id = 'J'+(_jid_counter++)
   const names = { TANK:['Gravity Core','Aegis Kernel','Stoneheart Node'], MAGE:['Nebula Pendant','Quasar Lattice','Aether Prism'], FIGHTER:['Razor Charm','Blitz Fang','Impact Sigil'], ANY:['Time Shard','Echo Loop','Lucky Array'] }
   const role = forRole || pick(['TANK','MAGE','FIGHTER','ANY'])
@@ -326,59 +334,88 @@ const makeJewelry = (forRole, lvl) => {
   else if(role==='MAGE') effects = { dpsPct:0.18, goldPct:0.05 }
   else if(role==='FIGHTER') effects = { dpsPct:0.12, critPct:0.05 }
   else effects = { goldPct:0.09, dpsPct:0.05 }
-  return { id, name: pick(names[role]), role, tier, effects }
+  return { id, name: pick(names[role]), role, itemLevel, minUnitLevel, effects }
 }
 
-const jewelSaleValue = j => Math.floor(3 * j.tier)
+const jewelSaleValue = j => Math.floor(3 * j.itemLevel)
 
 function jewelScore(unit, j){
   if(!j) return -Infinity
   // Only consider role-compatible and level-capable items
   if(!(j.role==='ANY' || j.role===unit.role)) return -Infinity
-  if(j.tier < unit.level) return -Infinity
+  if(unit.level < j.minUnitLevel) return -Infinity
   const base = computeUnitStatsWithJewels(unit, []).effDps
   const withJ = computeUnitStatsWithJewels(unit, [j.id]).effDps
   const dEff = withJ - base
   const goldWeight = 5 // small nudge for gold boosters
-  const g = (j.effects.goldPct||0) * goldWeight
+  const scale = 1 + 0.08 * Math.pow(j.itemLevel, 0.85)
+  const g = (j.effects.goldPct||0) * scale * goldWeight
   return dEff + g
 }
 
 function autoManageJewelry(){
   if(!S || !S.inventory || !S.inventory.jewelry) return
-  // 1) Auto-sell below party min level
-  const minL = partyMinLevel()
-  let sold = 0, goldGained = 0
-  Object.values(S.inventory.jewelry).forEach(j => {
-    if(j && j.tier < minL){ sold++; goldGained += jewelSaleValue(j); delete S.inventory.jewelry[j.id] }
-  })
-  if(sold>0){ S.gold += goldGained; logMsg(`🗑️ Auto-sold ${sold} low-tier jewels (+${F(goldGained)} gold) [party min Lv ${minL}]`) }
 
-  // 2) Snapshot previous equips
   const prevEquips = {}
   partyUnits().forEach(u => { prevEquips[u.id] = (u.jewelry||[]).slice() })
 
-  // Build pool of all jewelry and mark currently equipped pieces as taken
   const pool = Object.values(S.inventory.jewelry).slice()
   const assigned = new Set()
   partyUnits().forEach(u => { (u.jewelry||[]).forEach(id => assigned.add(id)) })
 
-  // 3) Distribute best-available per unit (greedy, highest DPS first)
   const unitsSorted = partyUnits().slice().sort((a,b)=>computeUnitStats(b).effDps - computeUnitStats(a).effDps)
   for(const u of unitsSorted){
-    // Allow this unit to keep its previous jewels by freeing them from the taken set
     (prevEquips[u.id]||[]).forEach(id => assigned.delete(id))
 
-    const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role) && j.tier >= u.level)
+    const candidates = pool.filter(j => !assigned.has(j.id) && (j.role==='ANY' || j.role===u.role) && u.level >= j.minUnitLevel)
     candidates.sort((a,b)=>jewelScore(u,b) - jewelScore(u,a))
     const picks = candidates.slice(0,3)
-    // Mark assigned
     picks.forEach(j => assigned.add(j.id))
-    // Equip
     u.jewelry = [picks[0]?.id || null, picks[1]?.id || null, picks[2]?.id || null]
   }
+
+  autoSellJewelry()
   if(typeof renderParty === 'function') renderParty()
   if(typeof renderJewelryBag === 'function') renderJewelryBag()
+}
+
+function autoSellJewelry(){
+  const limit = 100
+  const inUse = new Set()
+  partyUnits().forEach(u => u.jewelry.forEach(id=>{ if(id) inUse.add(id) }))
+  const all = Object.values(S.inventory.jewelry)
+  const toSell = []
+
+  all.forEach(j => {
+    if(inUse.has(j.id)) return
+    const equipUnits = partyUnits().filter(u => u.level >= j.minUnitLevel && (j.role==='ANY' || j.role===u.role))
+    if(equipUnits.length===0) return
+    let best = false
+    for(const u of equipUnits){
+      const candidates = all.filter(k => (k.role==='ANY' || k.role===u.role) && u.level >= k.minUnitLevel)
+      candidates.sort((a,b)=>jewelScore(u,b) - jewelScore(u,a))
+      const top3 = candidates.slice(0,3).map(k=>k.id)
+      if(top3.includes(j.id)){ best = true; break }
+    }
+    if(!best) toSell.push(j)
+  })
+
+  let goldGained = 0
+  toSell.forEach(j => { goldGained += jewelSaleValue(j); delete S.inventory.jewelry[j.id] })
+  if(toSell.length>0) logMsg(`🗑️ Auto-sold ${toSell.length} dominated jewels (+${F(goldGained)} gold)`)
+
+  let list = Object.values(S.inventory.jewelry)
+  if(list.length > limit){
+    const overflow = list.length - limit
+    const candidates = list.filter(j => !inUse.has(j.id)).sort((a,b)=>a.itemLevel - b.itemLevel)
+    let gold2 = 0
+    for(let i=0;i<overflow && i<candidates.length;i++){
+      const j = candidates[i]
+      gold2 += jewelSaleValue(j)
+      delete S.inventory.jewelry[j.id]
+    }
+    if(overflow>0) logMsg(`🗑️ Auto-sold ${overflow} low-value jewels (+${F(gold2)} gold)`)
+  }
 }
 
 // ===== Battle & Drops =====
@@ -416,7 +453,7 @@ const awardArmor = () => {
   renderParty();
 }
 
-const awardJewelry = () => { const roles = [...new Set(partyUnits().map(u=>u.role))]; const role = chance(.7) ? pick(roles) : pick(['TANK','MAGE','FIGHTER','ANY']); const j = makeJewelry(role, S.enemy.level); S.inventory.jewelry[j.id] = j; logMsg(`💍 Found ${j.name} [${j.role}] (caps at Lv ${j.tier})`); autoManageJewelry(); renderJewelryBag(); renderParty() }
+const awardJewelry = () => { const roles = [...new Set(partyUnits().map(u=>u.role))]; const role = chance(.7) ? pick(roles) : pick(['TANK','MAGE','FIGHTER','ANY']); const j = makeJewelry(role, S.enemy.level); S.inventory.jewelry[j.id] = j; logMsg(`💍 Found ${j.name} [${j.role}] (Lv ${j.itemLevel} • req Lv ${j.minUnitLevel})`); autoManageJewelry(); renderJewelryBag(); renderParty() }
 
 const processKill = () => {
   const lvl = S.enemy.level
@@ -641,7 +678,7 @@ const renderResets = () => {
 function formatJewel(j){
   if(!j) return '—'
   const eff = Object.entries(j.effects).map(([k,v])=>{ if(k==='armorToDpsPct') return `A→D ${Math.round(v*100)}%`; return `${k.replace('Pct','')} +${Math.round(v*100)}%` }).join(' • ')
-  return `${j.name} [${j.role}] <span class="tiny">(cap ${j.tier}) • ${eff}</span>`
+  return `${j.name} [${j.role}] <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
 }
 
 const renderParty = () => {
@@ -729,7 +766,8 @@ const renderJewelryBag = () => {
     const inUse = partyUnits().find(u => u.jewelry.includes(j.id))
     const badge = inUse?`<span class="tag">equipped</span>`:''
     const eff = Object.entries(j.effects).map(([k,v])=>{ if(k==='armorToDpsPct') return `Armor→DPS ${Math.round(v*100)}%`; return `${k.replace('Pct','')} +${Math.round(v*100)}%` }).join(' • ')
-    return `<div>• <b>${j.name}</b> [${j.role}] cap Lv ${j.tier} ${badge}<br><span class="tiny">${eff}</span></div>`
+    const req = partyUnits().some(u => u.level >= j.minUnitLevel) ? `Requires Unit Lv ${j.minUnitLevel}` : `<span style="color:var(--bad)">Requires Unit Lv ${j.minUnitLevel}</span>`
+    return `<div>• <b>${j.name}</b> [${j.role}] Lv ${j.itemLevel} ${badge}<br><span class="tiny">${req} • ${eff}</span></div>`
   }).join('')
 }
 
