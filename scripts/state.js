@@ -56,6 +56,11 @@ export const DEFAULT_STATE = {
   lastTick: Date.now(),
   log: [],
   meta: { diamantium: 0, eternium: 0, prestiges: 0 },
+  market: {
+    t: 0,
+    dia: { price: 5000, hist: [] },
+    ete: { price: 20000, hist: [] },
+  },
 }
 
 export let S = null
@@ -88,6 +93,7 @@ export const load = () => {
   if (!S.active) S.active = Object.keys(S.roster).slice(0, 3)
   if (!S.meta) S.meta = { diamantium: 0, eternium: 0, prestiges: 0 }
   if (S.meta && typeof S.meta.prestiges !== 'number') S.meta.prestiges = 0
+  if (!S.market) S.market = { t: 0, dia: { price: 5000, hist: [] }, ete: { price: 20000, hist: [] } }
   const idMap = { gravortoise: 'terraclaw', nebuline: 'nebulynx', razorloom: 'vortexhorn' }
   S.active = S.active.map((id) => idMap[id] || id)
   Object.keys(idMap).forEach((oldId) => {

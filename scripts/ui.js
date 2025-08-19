@@ -20,6 +20,8 @@ import {
   autoManageJewelry,
   awardJewelry,
   prestigePotentialBreakdown,
+  buyCurrency,
+  sellCurrency,
 } from './logic.js'
 
 // SVG Icons
@@ -44,6 +46,11 @@ export const renderTop = () => {
   const m = calcMetrics()
   if (nGph) nGph.textContent = F(m.gph)
   if (nTph) nTph.textContent = F(m.tph)
+  // Market top balances
+  const pDia = el('#priceDia'), pEte = el('#priceEte'), gBal = el('#goldBal')
+  if (pDia && S.market) pDia.textContent = F(S.market.dia.price)
+  if (pEte && S.market) pEte.textContent = F(S.market.ete.price)
+  if (gBal) gBal.textContent = F(S.gold)
 }
 
 export const renderEnemy = () => {
@@ -113,6 +120,11 @@ export const drawAllSparks = () => {
   drawSpark('chartDps', HIST.dps)
   drawSpark('chartGold', HIST.gph)
   drawSpark('chartTickets', HIST.tph)
+  // Market price charts
+  if (S.market) {
+    drawSpark('chartDia', S.market.dia.hist || [])
+    drawSpark('chartEte', S.market.ete.hist || [])
+  }
 }
 
 export const renderResets = () => {
@@ -341,6 +353,16 @@ export const bindTopBar = () => {
     })
 }
 
+// Market bindings
+function bindMarket() {
+  const bBuyDia = el('#buyDia'), bSellDia = el('#sellDia'), amtDia = el('#buyDiaAmt')
+  const bBuyEte = el('#buyEte'), bSellEte = el('#sellEte'), amtEte = el('#buyEteAmt')
+  if (bBuyDia) bBuyDia.onclick = () => { buyCurrency('dia', Math.max(1, Number(amtDia.value||1)|0)); render(); save() }
+  if (bSellDia) bSellDia.onclick = () => { sellCurrency('dia', Math.max(1, Number(amtDia.value||1)|0)); render(); save() }
+  if (bBuyEte) bBuyEte.onclick = () => { buyCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
+  if (bSellEte) bSellEte.onclick = () => { sellCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
+}
+
 export const runDev = (cmd) => {
   if (!cmd) return
   const [key, valRaw] = cmd.trim().split(/\s+/)
@@ -378,6 +400,7 @@ export const render = () => {
   renderResets()
   // Ensure logs show on initial load as well, not only after events
   renderLog()
+  bindMarket()
   drawAllSparks()
 }
 

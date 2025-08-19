@@ -343,6 +343,7 @@ export const tick = (dt) => {
     processKill()
     spawnEnemy()
   }
+  updateMarket(dt)
 }
 
 // ===== Gacha =====
@@ -441,6 +442,60 @@ export const calcMetrics = () => {
 }
 
 export const HIST = { dps: [], gph: [], tph: [] }
+// ===== Market =====
+function noise(t) {
+  // Smooth pseudo-noise using sum of sines
+  return (
+    Math.sin(t * 0.09) * 0.6 +
+    Math.sin(t * 0.017) * 0.3 +
+    Math.sin(t * 0.003) * 0.1
+  )
+}
+
+export function updateMarket(dt) {
+  if (!S.market) return
+  S.market.t += dt
+  const vol = 0.004 // base volatility per tick
+  const progress = clamp(Math.log10(S.gold + 10) / 10, 0, 1)
+  const guard = tankSurvivalFactor()
+  const bias = (progress - 0.5) * 0.02 + (guard - 0.8) * 0.03
+  ;['dia', 'ete'].forEach((k) => {
+    const m = S.market[k]
+    const base = m.price
+    const drift = base * (bias + noise(S.market.t + (k === 'ete' ? 100 : 0)) * vol)
+    const delta = Math.round(drift)
+    m.price = Math.max(100, base + delta)
+    m.hist.push(m.price)
+    if (m.hist.length > 200) m.hist.shift()
+  })
+}
+
+export function buyCurrency(kind, amount) {
+  const m = S.market[kind]
+  if (!m) return false
+  const cost = m.price * amount
+  if (S.gold < cost) return false
+  S.gold -= cost
+  if (kind === 'dia') S.meta.diamantium += amount
+  if (kind === 'ete') S.meta.eternium += amount
+  logMsg(`🛒 Bought ${amount} ${kind.toUpperCase()} for ${cost} gold @ ${m.price}`)
+  document.dispatchEvent(new CustomEvent('gold-change'))
+  return true
+}
+
+export function sellCurrency(kind, amount) {
+  const m = S.market[kind]
+  if (!m) return false
+  if (kind === 'dia' && S.meta.diamantium < amount) return false
+  if (kind === 'ete' && S.meta.eternium < amount) return false
+  const revenue = m.price * amount
+  S.gold += revenue
+  if (kind === 'dia') S.meta.diamantium -= amount
+  if (kind === 'ete') S.meta.eternium -= amount
+  logMsg(`💱 Sold ${amount} ${kind.toUpperCase()} for ${revenue} gold @ ${m.price}`)
+  document.dispatchEvent(new CustomEvent('gold-change'))
+  return true
+}
 const MAX_POINTS = 120
 export function pushHist() {
   const m = calcMetrics()

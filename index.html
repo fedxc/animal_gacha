@@ -111,6 +111,36 @@
                 <svg id="chartTickets" viewBox="0 0 200 60"></svg>
               </div>
             </div>
+            <div class="panel section" id="marketPanel">
+              <h1>Market</h1>
+              <div class="vlist">
+                <div class="kv" style="grid-template-columns: repeat(3, 1fr)">
+                  <div><b>DIA price</b><span id="priceDia">—</span></div>
+                  <div><b>ETE price</b><span id="priceEte">—</span></div>
+                  <div><b>Gold</b><span id="goldBal">—</span></div>
+                </div>
+                <div class="charts">
+                  <div class="chart"><div class="tiny">DIA price</div><svg id="chartDia" viewBox="0 0 200 60"></svg></div>
+                  <div class="chart"><div class="tiny">ETE price</div><svg id="chartEte" viewBox="0 0 200 60"></svg></div>
+                </div>
+                <div class="row">
+                  <div class="tiny">Trade DIA</div>
+                  <div class="actions">
+                    <input id="buyDiaAmt" type="number" min="1" value="1" style="width:80px" />
+                    <button class="btn" id="buyDia">Buy</button>
+                    <button class="btn" id="sellDia">Sell</button>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="tiny">Trade ETE</div>
+                  <div class="actions">
+                    <input id="buyEteAmt" type="number" min="1" value="1" style="width:80px" />
+                    <button class="btn" id="buyEte">Buy</button>
+                    <button class="btn" id="sellEte">Sell</button>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="log" id="log"></div>
           </div>
         </div>

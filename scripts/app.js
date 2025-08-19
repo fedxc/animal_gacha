@@ -38,10 +38,11 @@ const loop = () => {
   renderEnemy()
   renderResets()
   refreshAffordability()
+  // Ensure dashboard and market refresh smoothly during/after battles
+  drawAllSparks()
   if (sampleTimer >= 1) {
     sampleTimer = 0
     pushHist()
-    drawAllSparks()
   }
 }
 
