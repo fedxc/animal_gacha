@@ -24,6 +24,7 @@ import {
   sellCurrency,
   tradeCurrency,
   classPower,
+  trackGoldSpending,
 } from './logic.js?v=20250820_3'
 
 // ===== CONSTANTS =====
@@ -69,8 +70,20 @@ const SVG_ICONS = {
         <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
         <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
       </linearGradient>
+      <linearGradient id="earthGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#047857;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#065f46;stop-opacity:1" />
+      </linearGradient>
       <filter id="glow">
         <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="earthGlow">
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
         <feMerge> 
           <feMergeNode in="coloredBlur"/>
           <feMergeNode in="SourceGraphic"/>
@@ -81,20 +94,45 @@ const SVG_ICONS = {
     <rect x="12" y="20" width="24" height="20" rx="4" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
     <!-- Head -->
     <circle cx="24" cy="16" r="8" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
-    <!-- Horns -->
-    <path d="M18 12 Q16 8 18 4" stroke="#1e40af" stroke-width="2" fill="none"/>
-    <path d="M30 12 Q32 8 30 4" stroke="#1e40af" stroke-width="2" fill="none"/>
-    <!-- Eyes -->
+    <!-- Terra claws/horns -->
+    <path d="M18 12 Q16 8 18 4 Q20 2 18 0" stroke="url(#earthGrad)" stroke-width="3" fill="none" filter="url(#earthGlow)"/>
+    <path d="M30 12 Q32 8 30 4 Q28 2 30 0" stroke="url(#earthGrad)" stroke-width="3" fill="none" filter="url(#earthGlow)"/>
+    <!-- Claw details -->
+    <path d="M17 10 Q15 6 17 2" stroke="#10b981" stroke-width="1.5" fill="none" opacity="0.9"/>
+    <path d="M31 10 Q33 6 31 2" stroke="#10b981" stroke-width="1.5" fill="none" opacity="0.9"/>
+    <!-- Eyes with earth energy -->
     <circle cx="22" cy="14" r="1.5" fill="#ffffff"/>
     <circle cx="26" cy="14" r="1.5" fill="#ffffff"/>
     <circle cx="22" cy="14" r="0.5" fill="#3b82f6"/>
     <circle cx="26" cy="14" r="0.5" fill="#3b82f6"/>
-    <!-- Energy aura -->
-    <circle cx="24" cy="8" r="3" fill="#60a5fa" opacity="0.8" filter="url(#glow)"/>
+    <!-- Earth pupils -->
+    <circle cx="22" cy="14" r="0.2" fill="#10b981" opacity="0.9"/>
+    <circle cx="26" cy="14" r="0.2" fill="#10b981" opacity="0.9"/>
+    <!-- Earth energy aura -->
+    <circle cx="24" cy="8" r="3" fill="url(#earthGrad)" opacity="0.8" filter="url(#earthGlow)"/>
     <circle cx="24" cy="8" r="1.5" fill="#ffffff" opacity="0.9"/>
-    <!-- Arms -->
+    <!-- Earth crystals in aura -->
+    <polygon points="24,6 26,8 24,10 22,8" fill="#10b981" opacity="0.7" filter="url(#earthGlow)"/>
+    <polygon points="20,8 22,10 20,12 18,10" fill="#059669" opacity="0.6" filter="url(#earthGlow)"/>
+    <polygon points="28,8 30,10 28,12 26,10" fill="#047857" opacity="0.6" filter="url(#earthGlow)"/>
+    <!-- Arms with earth armor -->
     <rect x="8" y="24" width="6" height="12" rx="3" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
     <rect x="34" y="24" width="6" height="12" rx="3" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
+    <!-- Earth armor plates -->
+    <rect x="9" y="26" width="4" height="3" rx="1" fill="url(#earthGrad)" opacity="0.8"/>
+    <rect x="35" y="26" width="4" height="3" rx="1" fill="url(#earthGrad)" opacity="0.8"/>
+    <rect x="9" y="32" width="4" height="3" rx="1" fill="url(#earthGrad)" opacity="0.8"/>
+    <rect x="35" y="32" width="4" height="3" rx="1" fill="url(#earthGrad)" opacity="0.8"/>
+    <!-- Earth particles around character -->
+    <circle cx="10" cy="18" r="0.8" fill="#10b981" opacity="0.7" filter="url(#earthGlow)"/>
+    <circle cx="38" cy="20" r="0.6" fill="#059669" opacity="0.8" filter="url(#earthGlow)"/>
+    <circle cx="42" cy="14" r="0.5" fill="#047857" opacity="0.6" filter="url(#earthGlow)"/>
+    <circle cx="6" cy="30" r="0.7" fill="#065f46" opacity="0.7" filter="url(#earthGlow)"/>
+    <!-- Earth energy trails -->
+    <path d="M8 16 Q12 18 16 16" stroke="#10b981" stroke-width="1" fill="none" opacity="0.5" filter="url(#earthGlow)"/>
+    <path d="M32 18 Q36 20 40 18" stroke="#059669" stroke-width="1" fill="none" opacity="0.5" filter="url(#earthGlow)"/>
+    <!-- Ground connection -->
+    <path d="M20 40 Q24 42 28 40" stroke="url(#earthGrad)" stroke-width="2" fill="none" opacity="0.6" filter="url(#earthGlow)"/>
   </svg>`,
   
   MAGE: `<svg viewBox="0 0 48 48" class="svg">
@@ -103,6 +141,11 @@ const SVG_ICONS = {
         <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
         <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
       </linearGradient>
+      <linearGradient id="cosmicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#7c3aed;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#5b21b6;stop-opacity:1" />
+      </linearGradient>
       <filter id="magicGlow">
         <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
         <feMerge> 
@@ -110,29 +153,50 @@ const SVG_ICONS = {
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <filter id="cosmicGlow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>
-    <!-- Cat head -->
-    <ellipse cx="24" cy="18" rx="6" ry="5" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
-    <!-- Cat ears -->
-    <path d="M18 14 L16 8 L20 12 Z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
-    <path d="M30 14 L32 8 L28 12 Z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
-    <!-- Eyes -->
-    <circle cx="22" cy="16" r="1" fill="#ffffff"/>
-    <circle cx="26" cy="16" r="1" fill="#ffffff"/>
-    <circle cx="22" cy="16" r="0.3" fill="#8b5cf6"/>
-    <circle cx="26" cy="16" r="0.3" fill="#8b5cf6"/>
+    <!-- Lynx head -->
+    <ellipse cx="24" cy="18" rx="7" ry="6" fill="url(#cosmicGrad)" stroke="#5b21b6" stroke-width="1"/>
+    <!-- Lynx ears with tufts -->
+    <path d="M17 12 L15 6 L19 10 Z" fill="url(#cosmicGrad)" stroke="#5b21b6" stroke-width="1"/>
+    <path d="M31 12 L33 6 L29 10 Z" fill="url(#cosmicGrad)" stroke="#5b21b6" stroke-width="1"/>
+    <!-- Ear tufts -->
+    <path d="M16 8 L14 4 L18 6 Z" fill="#ffffff" opacity="0.9"/>
+    <path d="M32 8 L34 4 L30 6 Z" fill="#ffffff" opacity="0.9"/>
+    <!-- Mystical eyes -->
+    <circle cx="22" cy="16" r="1.2" fill="#ffffff"/>
+    <circle cx="26" cy="16" r="1.2" fill="#ffffff"/>
+    <circle cx="22" cy="16" r="0.4" fill="#8b5cf6"/>
+    <circle cx="26" cy="16" r="0.4" fill="#8b5cf6"/>
+    <!-- Cosmic pupils -->
+    <circle cx="22" cy="16" r="0.2" fill="#ffffff" opacity="0.8"/>
+    <circle cx="26" cy="16" r="0.2" fill="#ffffff" opacity="0.8"/>
     <!-- Nose -->
     <circle cx="24" cy="18" r="0.5" fill="#fbbf24"/>
-    <!-- Robe -->
-    <path d="M16 22 Q24 20 32 22 L30 40 L18 40 Z" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
-    <!-- Hood -->
-    <path d="M16 22 Q24 16 32 22 Q24 18 16 22" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
-    <!-- Staff -->
-    <line x1="36" y1="28" x2="42" y2="22" stroke="#6d28d9" stroke-width="2"/>
-    <circle cx="42" cy="22" r="2" fill="#8b5cf6" filter="url(#magicGlow)"/>
-    <!-- Magic orb -->
-    <circle cx="20" cy="26" r="2" fill="#a78bfa" filter="url(#magicGlow)"/>
-    <circle cx="20" cy="26" r="1" fill="#ffffff" opacity="0.8"/>
+    <!-- Mystical robe with cosmic patterns -->
+    <path d="M15 22 Q24 20 33 22 L31 40 L17 40 Z" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Hood with star patterns -->
+    <path d="M15 22 Q24 16 33 22 Q24 18 15 22" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Cosmic staff -->
+    <line x1="35" y1="28" x2="42" y2="22" stroke="#6d28d9" stroke-width="2"/>
+    <circle cx="42" cy="22" r="2.5" fill="url(#cosmicGrad)" filter="url(#cosmicGlow)"/>
+    <!-- Nebula orb -->
+    <circle cx="18" cy="26" r="2.5" fill="url(#cosmicGrad)" filter="url(#cosmicGlow)"/>
+    <circle cx="18" cy="26" r="1.5" fill="#ffffff" opacity="0.7"/>
+    <!-- Cosmic aura particles -->
+    <circle cx="12" cy="12" r="1" fill="#a855f7" opacity="0.6" filter="url(#magicGlow)"/>
+    <circle cx="36" cy="14" r="0.8" fill="#7c3aed" opacity="0.7" filter="url(#magicGlow)"/>
+    <circle cx="40" cy="30" r="0.6" fill="#8b5cf6" opacity="0.8" filter="url(#magicGlow)"/>
+    <!-- Star patterns on robe -->
+    <circle cx="20" cy="32" r="0.3" fill="#ffffff" opacity="0.6"/>
+    <circle cx="28" cy="34" r="0.2" fill="#ffffff" opacity="0.5"/>
+    <circle cx="24" cy="36" r="0.4" fill="#ffffff" opacity="0.4"/>
   </svg>`,
   
   FIGHTER: `<svg viewBox="0 0 48 48" class="svg">
@@ -141,8 +205,20 @@ const SVG_ICONS = {
         <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
         <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
       </linearGradient>
+      <linearGradient id="vortexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#ea580c;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#c2410c;stop-opacity:1" />
+      </linearGradient>
       <filter id="fireGlow">
         <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="vortexGlow">
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
         <feMerge> 
           <feMergeNode in="coloredBlur"/>
           <feMergeNode in="SourceGraphic"/>
@@ -153,22 +229,40 @@ const SVG_ICONS = {
     <ellipse cx="24" cy="28" rx="8" ry="10" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
     <!-- Head -->
     <ellipse cx="24" cy="16" rx="6" ry="5" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
-    <!-- Horns -->
-    <path d="M18 12 Q16 6 18 2" stroke="#dc2626" stroke-width="2" fill="none"/>
-    <path d="M30 12 Q32 6 30 2" stroke="#dc2626" stroke-width="2" fill="none"/>
-    <!-- Eyes -->
+    <!-- Vortex horns with spiral effect -->
+    <path d="M18 12 Q16 8 18 4 Q20 2 18 0" stroke="url(#vortexGrad)" stroke-width="2.5" fill="none" filter="url(#vortexGlow)"/>
+    <path d="M30 12 Q32 8 30 4 Q28 2 30 0" stroke="url(#vortexGrad)" stroke-width="2.5" fill="none" filter="url(#vortexGlow)"/>
+    <!-- Horn spirals -->
+    <path d="M17 10 Q15 6 17 2" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.8"/>
+    <path d="M31 10 Q33 6 31 2" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.8"/>
+    <!-- Eyes with vortex effect -->
     <circle cx="22" cy="14" r="1.2" fill="#ffffff"/>
     <circle cx="26" cy="14" r="1.2" fill="#ffffff"/>
     <circle cx="22" cy="14" r="0.4" fill="#ef4444"/>
     <circle cx="26" cy="14" r="0.4" fill="#ef4444"/>
-    <!-- Fire from forehead -->
-    <path d="M22 8 Q24 2 26 8 Q24 4 22 8" fill="#f97316" filter="url(#fireGlow)"/>
+    <!-- Vortex pupils -->
+    <circle cx="22" cy="14" r="0.2" fill="#fbbf24" opacity="0.9"/>
+    <circle cx="26" cy="14" r="0.2" fill="#fbbf24" opacity="0.9"/>
+    <!-- Vortex energy from forehead -->
+    <path d="M22 8 Q24 2 26 8 Q24 4 22 8" fill="url(#vortexGrad)" filter="url(#vortexGlow)"/>
     <path d="M22 8 Q24 4 26 8 Q24 6 22 8" fill="#fbbf24" opacity="0.8"/>
+    <!-- Spinning vortex aura -->
+    <circle cx="24" cy="8" r="2" fill="none" stroke="url(#vortexGrad)" stroke-width="1" opacity="0.6" filter="url(#vortexGlow)"/>
+    <circle cx="24" cy="8" r="1.5" fill="none" stroke="#fbbf24" stroke-width="0.5" opacity="0.8"/>
     <!-- Legs -->
     <rect x="18" y="36" width="4" height="8" rx="2" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
     <rect x="26" y="36" width="4" height="8" rx="2" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
-    <!-- Tail -->
-    <path d="M32 30 Q38 26 36 32" stroke="#dc2626" stroke-width="2" fill="none"/>
+    <!-- Vortex tail -->
+    <path d="M32 30 Q38 26 36 32" stroke="url(#vortexGrad)" stroke-width="2.5" fill="none" filter="url(#vortexGlow)"/>
+    <path d="M32 30 Q38 26 36 32" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.7"/>
+    <!-- Vortex particles around character -->
+    <circle cx="12" cy="20" r="0.8" fill="#f97316" opacity="0.7" filter="url(#vortexGlow)"/>
+    <circle cx="36" cy="24" r="0.6" fill="#ea580c" opacity="0.8" filter="url(#vortexGlow)"/>
+    <circle cx="40" cy="16" r="0.5" fill="#fbbf24" opacity="0.6" filter="url(#vortexGlow)"/>
+    <circle cx="8" cy="32" r="0.7" fill="#c2410c" opacity="0.7" filter="url(#vortexGlow)"/>
+    <!-- Energy trails -->
+    <path d="M10 18 Q14 20 18 18" stroke="#f97316" stroke-width="1" fill="none" opacity="0.5" filter="url(#vortexGlow)"/>
+    <path d="M30 22 Q34 24 38 22" stroke="#ea580c" stroke-width="1" fill="none" opacity="0.5" filter="url(#vortexGlow)"/>
   </svg>`
 }
 
@@ -420,7 +514,7 @@ export const renderResets = () => {
         <span class="tag" title="Optional" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.starsOk ? '✓' : '○'} 5★ each (optional)</span>
         <span class="tag" title="Optional" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.jewelsOk ? '✓' : '○'} 3 jewels each (optional)</span>
       </div>
-      ${(() => { const b = prestigePotentialBreakdown(); return `<div class=\"tiny\" style=\"margin:.25rem 0\">Potential breakdown: base ${b.base} × stars ${F_Game(b.starMult)} × jewels ${F_Game(b.jewelMult)} = <b>${b.total}</b></div>` })()}
+      ${(() => { const b = prestigePotentialBreakdown(); return `<div class=\"tiny\" style=\"margin:.25rem 0\">Potential breakdown: base ${b.base} × stars ${F_Game(b.starMult)} × jewels ${F_Game(b.jewelMult)} = <b>${b.total}</b><br>Based on total gold spent: ${F_Game(b.totalSpent)}</div>` })()}
       <button class="btn" id="btnPrestige" ${canPrestige() ? '' : 'disabled'} title="${canPrestige() ? 'Gain ' + diaEarn + ' Dia' : 'Meet all requirements to prestige'}">Prestige</button>
       <div class="tiny">Potential: +${diaEarn} DIA</div>
     </div>
@@ -785,6 +879,7 @@ const handleLevelUp = (id) => {
   const cost = levelUpCost(unit.level)
   if (S.gold >= cost) {
     S.gold -= cost
+    trackGoldSpending(cost)
     unit.level += 1
     autoManageJewelry()
     save()
@@ -812,6 +907,7 @@ const handleBuyUpgrade = (key) => {
   
   if (S.gold >= cost) {
     S.gold -= cost
+    trackGoldSpending(cost)
     S.upgrades[key] += 1
     save()
     render()

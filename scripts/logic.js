@@ -15,6 +15,48 @@ export const levelMult = (lvl) => 1 + 0.12 * (lvl - 1)
 export const critExpected = (dps, critChance, critMult = 1.5) =>
   dps * (1 + critChance * (critMult - 1))
 
+// Calculate total gold spent on leveling all units
+export const calculateTotalLevelCost = () => {
+  let total = 0
+  Object.values(S.roster).forEach(unit => {
+    for (let level = 1; level < unit.level; level++) {
+      total += levelUpCost(level)
+    }
+  })
+  return total
+}
+
+// Calculate total gold spent on upgrades
+export const calculateTotalUpgradeCost = () => {
+  const UPGRADE_BASE_COSTS = { dps: 100, gold: 120, crit: 150 }
+  const UPGRADE_SCALING_FACTOR = 1.35
+  
+  let total = 0
+  Object.entries(S.upgrades).forEach(([key, level]) => {
+    for (let i = 0; i < level; i++) {
+      total += Math.floor(UPGRADE_BASE_COSTS[key] * Math.pow(UPGRADE_SCALING_FACTOR, i))
+    }
+  })
+  return total
+}
+
+// Calculate total gold spent (levels + upgrades)
+export const calculateTotalGoldSpent = () => {
+  return calculateTotalLevelCost() + calculateTotalUpgradeCost()
+}
+
+// Track gold spending (call this whenever gold is spent)
+export const trackGoldSpending = (amount) => {
+  S.meta.totalGoldSpent += amount
+}
+
+// Initialize totalGoldSpent for existing saves that don't have it
+export const initializeTotalGoldSpent = () => {
+  if (typeof S.meta.totalGoldSpent !== 'number') {
+    S.meta.totalGoldSpent = calculateTotalGoldSpent()
+  }
+}
+
 export const applyJewelry = (unit, stats, jIds = null) => {
   let add = { dpsPct: 0, goldPct: 0, armorPct: 0, critPct: 0, armorToDpsPct: 0 }
   const list = jIds || unit.jewelry
@@ -116,7 +158,7 @@ const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.4) * 1.8
 export const tankSurvivalFactor = () => {
   const p = partyStats()
   const threat = enemyDps(S.enemy.level)
-  const windowSec = 8
+  const windowSec = 6
   const ratio = p.tankEhp / (threat * windowSec)
   return clamp(0.2 + 0.8 * clamp(ratio, 0, 1), 0.2, 1)
 }
@@ -389,7 +431,8 @@ export const tick = (dt) => {
 // ===== Gacha =====
 const P_CHAR = 0.015
 const ticketScrapGold = (enemyLvl) => {
-  const base = (5 + enemyLvl * 3) * GOLD_MULT
+  // Increased base scrap value for better gacha drops
+  const base = (12 + enemyLvl * 4) * GOLD_MULT
   const pstats = partyStats()
   const mult =
     (1 + 0.07 * S.upgrades.gold) *
@@ -404,6 +447,13 @@ export const summonOnce = () => {
   if (Math.random() >= P_CHAR) {
     const g = ticketScrapGold(S.enemy.level)
     S.gold += g
+    
+    // 0.5% chance to get 1 DIA from scrap
+    if (chance(0.005)) {
+      S.meta.diamantium += 1
+      return { ok: true, msg: `Scrap ➜ +${g} gold +💎 1 DIA!` }
+    }
+    
     return { ok: true, msg: `Scrap ➜ +${g} gold` }
   }
   const pool = summonPool()
@@ -453,7 +503,7 @@ export const calcMetrics = () => {
   const etaDiaH = eta(Math.max(0, nextDiaGold - S.gold), gph)
   const nEte = transcendEarned()
   const threat = enemyDps(S.enemy.level)
-  const windowSec = 8
+  const windowSec = 6
   const reqEhp = threat * windowSec
   return {
     kpm: kps * 60,
@@ -748,7 +798,8 @@ export const jewelsBonusMultiplier = () => {
 }
 
 export const prestigeEarned = () => {
-  const base = Math.max(0, Math.floor(DIA_K * Math.log10(S.gold + 1)))
+  const totalSpent = calculateTotalGoldSpent()
+  const base = Math.max(0, Math.floor(DIA_K * Math.log10(totalSpent + 1)))
   const mult = fiveStarBonusMultiplier() * jewelsBonusMultiplier()
   return Math.floor(base * mult)
 }
@@ -772,11 +823,12 @@ export const canPrestige = () => {
 
 // Breakdown for UI
 export const prestigePotentialBreakdown = () => {
-  const base = Math.max(0, Math.floor(DIA_K * Math.log10(S.gold + 1)))
+  const totalSpent = calculateTotalGoldSpent()
+  const base = Math.max(0, Math.floor(DIA_K * Math.log10(totalSpent + 1)))
   const starMult = fiveStarBonusMultiplier()
   const jewelMult = jewelsBonusMultiplier()
   const total = Math.floor(base * starMult * jewelMult)
-  return { base, starMult, jewelMult, total }
+  return { base, starMult, jewelMult, total, totalSpent }
 }
 export const canTranscend = () => S.meta.diamantium >= 25
 
@@ -797,6 +849,7 @@ export const prestigeReset = () => {
   S.upgrades = { dps: 0, gold: 0, crit: 0 }
   S.inventory = { jewelry: {} }
   S.meta.prestiges = (S.meta.prestiges || 0) + 1
+  S.meta.totalGoldSpent = 0
   logMsg(`Diamantium +${F_Game(earned)}. Reality rebooted.`)
   spawnEnemy()
 }
@@ -819,6 +872,7 @@ export const transcendReset = () => {
   S.tickets = 0
   S.upgrades = { dps: 0, gold: 0, crit: 0 }
   S.inventory = { jewelry: {} }
+  S.meta.totalGoldSpent = 0
   logMsg(`Eternium +${F_Game(earned)}. Reality shattered.`)
   spawnEnemy()
 }

@@ -214,16 +214,16 @@ small {
 /* ===== CHARACTER CARDS ===== */
 .char {
   display: grid;
-  grid-template-columns: 52px 1fr auto;
+  grid-template-columns: 68px 1fr auto;
   gap: 0.6rem;
   align-items: center;
 }
 
 .char .svg {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: #0b0f16;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #1a1f2e;
   display: grid;
   place-items: center;
   border: var(--shadow-border);
@@ -238,9 +238,9 @@ small {
 }
 
 .role-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   display: grid;
   place-items: center;
   border: var(--shadow-border);

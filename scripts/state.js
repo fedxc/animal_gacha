@@ -56,7 +56,7 @@ export const DEFAULT_STATE = {
   enemy: { level: 1, type: 'carapoid', hp: 100, maxHp: 100 },
   lastTick: Date.now(),
   log: [],
-  meta: { diamantium: 0, eternium: 0, prestiges: 0, stellarium: 0, nebulium: 0, vortexium: 0 },
+  meta: { diamantium: 0, eternium: 0, prestiges: 0, stellarium: 0, nebulium: 0, vortexium: 0, totalGoldSpent: 0 },
   market: {
     t: 0,
     dia: { price: 5000, hist: [] },
@@ -95,9 +95,10 @@ export const load = () => {
   })
   if (!S.upgrades) S.upgrades = { dps: 0, gold: 0, crit: 0 }
   if (!S.active) S.active = Object.keys(S.roster).slice(0, 3)
-  if (!S.meta) S.meta = { diamantium: 0, eternium: 0, prestiges: 0, stellarium: 0, nebulium: 0, vortexium: 0 }
+  if (!S.meta) S.meta = { diamantium: 0, eternium: 0, prestiges: 0, stellarium: 0, nebulium: 0, vortexium: 0, totalGoldSpent: 0 }
   if (S.meta && typeof S.meta.prestiges !== 'number') S.meta.prestiges = 0
   if (!S.meta.stellarium) S.meta.stellarium = 0
+  if (typeof S.meta.totalGoldSpent !== 'number') S.meta.totalGoldSpent = 0
   if (!S.meta.nebulium) S.meta.nebulium = 0
   if (!S.meta.vortexium) S.meta.vortexium = 0
   if (!S.market) S.market = { t: 0, dia: { price: 5000, hist: [] }, ete: { price: 20000, hist: [] }, ste: { price: 1, hist: [] }, neb: { price: 1, hist: [] }, vor: { price: 1, hist: [] } }

@@ -14,6 +14,7 @@ import {
   calcMetrics,
   prestigeGoldReq,
   awardJewelry,
+  initializeTotalGoldSpent,
 } from './logic.js?v=20250820_3'
 import {
   render,
@@ -103,6 +104,7 @@ function runTests() {
 
 export const start = () => {
   load()
+  initializeTotalGoldSpent()
   bindTopBar()
   if (!S.enemy || !S.enemy.hp) spawnEnemy()
   autoManageJewelry()
