@@ -623,7 +623,7 @@ export function tradeCurrency(from, to, amount) {
   
   if (from === 'dia') {
     // DIA to class currency (market prices)
-    cost = Math.ceil(amount * S.market[to].price)
+    cost = amount * S.market[to].price
   } else if (['ste', 'neb', 'vor'].includes(from) && ['ste', 'neb', 'vor'].includes(to)) {
     // Class currency to class currency (1:1 exchange)
     if (!hasClassCurrency) {
@@ -640,7 +640,9 @@ export function tradeCurrency(from, to, amount) {
   
   // Check if player has enough source currency
   if (S.meta[fromProp] < cost) {
-    logMsg(`❌ Not enough ${from.toUpperCase()}: need ${F_Game(cost)}, have ${F_Game(S.meta[fromProp])}`)
+    const costFormatted = from === 'dia' ? F_Game(cost) : F_Game(cost)
+    const haveFormatted = F_Game(S.meta[fromProp])
+    logMsg(`❌ Not enough ${from.toUpperCase()}: need ${costFormatted}, have ${haveFormatted}`)
     return false
   }
   
@@ -651,8 +653,8 @@ export function tradeCurrency(from, to, amount) {
   }
   
   // Execute the trade
-  S.meta[fromProp] -= cost
-  S.meta[toProp] += amount
+  S.meta[fromProp] = Math.max(0, S.meta[fromProp] - cost)
+  S.meta[toProp] = Math.min(100, S.meta[toProp] + amount)
   
   console.log(`Trade successful! New balances:`, S.meta)
   

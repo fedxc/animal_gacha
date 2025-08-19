@@ -38,6 +38,8 @@ const loop = () => {
   renderEnemy()
   renderResets()
   refreshAffordability()
+  // Update exchange rate display in real-time
+  if (window.updateExchangeRate) window.updateExchangeRate()
   // Ensure dashboard and market refresh smoothly during/after battles
   drawAllSparks()
   if (sampleTimer >= 1) {

@@ -69,7 +69,7 @@
           v0.5.0 • trading power
         </div>
       </div>
-      <div class="grid cols-3" style="margin-top: 0.6rem">
+      <div class="grid cols-3 mt-06">
         <div class="col-stack">
           <div class="panel section" id="partyPanel">
             <h1>Party <small>(3 active)</small></h1>
@@ -112,7 +112,7 @@
             <div class="panel section" id="marketPanel">
               <h1>Currency Exchange</h1>
               <div class="vlist">
-                <div class="kv" style="grid-template-columns: repeat(3, 1fr)">
+                <div class="kv grid-3-cols">
                   <div><b>STE price</b><span id="priceSte">—</span></div>
                   <div><b>NEB price</b><span id="priceNeb">—</span></div>
                   <div><b>VOR price</b><span id="priceVor">—</span></div>
@@ -122,28 +122,27 @@
                   <div class="chart"><div class="tiny">NEB price</div><svg id="chartNeb" viewBox="0 0 200 60"></svg></div>
                   <div class="chart"><div class="tiny">VOR price</div><svg id="chartVor" viewBox="0 0 200 60"></svg></div>
                 </div>
-                <div class="row">
+                <div class="row flex-center">
                   <div class="tiny">Currency Trading</div>
-                  <div class="actions">
-                    <select id="fromCurrency" style="width:80px">
-                      <option value="dia">DIA</option>
-                      <option value="ste">STE</option>
-                      <option value="neb">NEB</option>
-                      <option value="vor">VOR</option>
-                    </select>
-                    <input id="tradeAmount" type="number" min="1" value="1" style="width:80px" />
-                    <select id="toCurrency" style="width:80px">
-                      <option value="ste">STE</option>
-                      <option value="neb">NEB</option>
-                      <option value="vor">VOR</option>
-                    </select>
-                    <button class="btn" id="tradeBtn">Trade</button>
-                  </div>
+                  <select id="fromCurrency" class="w-80">
+                    <option value="dia">DIA</option>
+                    <option value="ste">STE</option>
+                    <option value="neb">NEB</option>
+                    <option value="vor">VOR</option>
+                  </select>
+                  <input id="tradeAmount" type="number" min="0.01" step="0.01" value="1" class="w-80" />
+                  <select id="toCurrency" class="w-80">
+                    <option value="ste">STE</option>
+                    <option value="neb">NEB</option>
+                    <option value="vor">VOR</option>
+                  </select>
+                  <button class="btn" id="tradeBtn">Trade</button>
+                  <div class="tiny exchange-rate" id="exchangeRate"></div>
                 </div>
-                <div class="kv" style="grid-template-columns: repeat(3, 1fr)">
-                  <div><b style="color: #3b82f6">Stellarium</b><span id="stellarium">0</span></div>
-                  <div><b style="color: #8b5cf6">Nebulium</b><span id="nebulium">0</span></div>
-                  <div><b style="color: #ef4444">Vortexium</b><span id="vortexium">0</span></div>
+                <div class="kv grid-3-cols">
+                  <div><b class="currency-stellarium">Stellarium</b><span id="stellarium">0</span></div>
+                  <div><b class="currency-nebulium">Nebulium</b><span id="nebulium">0</span></div>
+                  <div><b class="currency-vortexium">Vortexium</b><span id="vortexium">0</span></div>
                 </div>
               </div>
             </div>
@@ -172,7 +171,7 @@
       </div>
       <details class="details-dev">
         <summary>Developer Tools (click to open)</summary>
-        <div class="codebox" style="margin-top: 0.4rem">
+        <div class="codebox mt-04">
           <input
             id="devInput"
             type="text"
@@ -181,11 +180,6 @@
           <button class="btn" id="devRun">Run</button>
         </div>
       </details>
-      <div id="toast" aria-live="polite"></div>
-      <div class="foot tiny">
-        Tip: each character has 3 jewelry slots. Jewelry has item level and minimum unit level;
-        best-in-bag is auto-equipped per unit & role.
-      </div>
     </div>
     <template id="party-card">
       <div class="panel">
@@ -208,10 +202,10 @@
           <div><b>Armor</b><span class="armor"></span></div>
           <div><b>Jewelry</b><span class="jcount"></span></div>
         </div>
-        <div class="vlist" style="margin-top: 0.4rem">
-          <div class="row tiny" style="align-items: flex-start">
+        <div class="vlist mt-04">
+          <div class="row tiny flex-start">
             <div>Jewels:</div>
-            <div class="jewels" style="text-align: right"></div>
+            <div class="jewels text-right"></div>
           </div>
         </div>
       </div>

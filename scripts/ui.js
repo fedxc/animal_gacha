@@ -59,7 +59,7 @@ const HIGH_POWER_THRESHOLD = 80
 const POWER_BAR_MAX = 100
 
 // Currency trading defaults
-const MIN_TRADE_AMOUNT = 1
+const MIN_TRADE_AMOUNT = 0.01
 
 // Anime-style SVG icons inspired by the character images
 const SVG_ICONS = {
@@ -891,13 +891,44 @@ function bindMarket() {
     tradeBtn.onclick = () => {
       const from = fromCurrency.value
       const to = toCurrency.value
-      const amount = Math.max(MIN_TRADE_AMOUNT, Number(tradeAmount.value || 1) | 0)
+      const amount = Math.max(MIN_TRADE_AMOUNT, Number(tradeAmount.value || 1))
       if (tradeCurrency(from, to, amount)) {
         render()
         save()
       }
     }
   }
+  
+  // Update exchange rate display
+  const updateExchangeRate = () => {
+    const from = fromCurrency.value
+    const to = toCurrency.value
+    const amount = Number(tradeAmount.value || 1)
+    const exchangeRateEl = el('#exchangeRate')
+    
+    if (exchangeRateEl && S.market) {
+      if (from === 'dia' && ['ste', 'neb', 'vor'].includes(to)) {
+        const cost = amount * S.market[to].price
+        const costFormatted = cost.toFixed(3)
+        exchangeRateEl.textContent = `Cost: ${costFormatted} DIA`
+      } else if (['ste', 'neb', 'vor'].includes(from) && ['ste', 'neb', 'vor'].includes(to)) {
+        exchangeRateEl.textContent = `1:1 exchange`
+      } else {
+        exchangeRateEl.textContent = ''
+      }
+    }
+  }
+  
+  // Bind exchange rate updates
+  if (fromCurrency) fromCurrency.onchange = updateExchangeRate
+  if (toCurrency) toCurrency.onchange = updateExchangeRate
+  if (tradeAmount) tradeAmount.oninput = updateExchangeRate
+  
+  // Initial exchange rate display
+  updateExchangeRate()
+  
+  // Export the function so it can be called from the main loop
+  window.updateExchangeRate = updateExchangeRate
 }
 
 export const runDev = (cmd) => {
