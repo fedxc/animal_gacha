@@ -401,7 +401,7 @@ export const renderDashboard = () => {
   grid.innerHTML = `
     <div class="dashboard-panel">
       <div class="dashboard-group combat-stats">
-        <div class="group-header">⚔️ Combat Performance</div>
+        <div class="group-header">⚔️ Combat</div>
         <div class="group-content">
           <div><b>DPS</b>${F_Dashboard(m.dps)}</div>
           <div><b>Kills/min</b>${F_Dashboard(m.kpm)}</div>
@@ -410,7 +410,7 @@ export const renderDashboard = () => {
       </div>
       
       <div class="dashboard-group economy-stats">
-        <div class="group-header">💰 Economy & Resources</div>
+        <div class="group-header">💰 Economy</div>
         <div class="group-content">
           <div><b>Gold/kill</b>${F_Dashboard(m.goldPerKill)}</div>
           <div><b>Gold/hr</b>${F_Dashboard(m.gph)}</div>
@@ -421,7 +421,7 @@ export const renderDashboard = () => {
     
     <div class="dashboard-panel">
       <div class="dashboard-group defense-stats">
-        <div class="group-header">🛡️ Defense & Survival</div>
+        <div class="group-header">🛡️ Defense</div>
         <div class="group-content">
           <div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>
           <div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>
@@ -430,7 +430,7 @@ export const renderDashboard = () => {
       </div>
       
       <div class="dashboard-group progression-stats">
-        <div class="group-header">⭐ Progression & Prestige</div>
+        <div class="group-header">⭐ Progression</div>
         <div class="group-content">
           <div><b>Diamantium/hr</b>${F_Dashboard(m.diah)}</div>
           <div><b>Eternium/hr</b>${F_Dashboard(m.eteh)}</div>
@@ -441,21 +441,22 @@ export const renderDashboard = () => {
     
     <div class="dashboard-panel">
       <div class="dashboard-group loot-stats">
-        <div class="group-header">🎁 Loot Generation</div>
+        <div class="group-header">🎁 Loot</div>
         <div class="group-content">
           <div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>
           <div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>
           <div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>
         </div>
       </div>
-    <div class="dashboard-group market-stats">
-      <div class="group-header">📊 Market Trends</div>
-      <div class="group-content">
-        <div><b>STE Trend</b>${getMarketTrend('ste')}</div>
-        <div><b>NEB Trend</b>${getMarketTrend('neb')}</div>
-        <div><b>VOR Trend</b>${getMarketTrend('vor')}</div>
+      
+      <div class="dashboard-group market-stats">
+        <div class="group-header">📊 Market</div>
+        <div class="group-content">
+          <div><b>STE Trend</b>${getMarketTrend('ste')}</div>
+          <div><b>NEB Trend</b>${getMarketTrend('neb')}</div>
+          <div><b>VOR Trend</b>${getMarketTrend('vor')}</div>
+        </div>
       </div>
-    </div>
     </div>
   `
 }

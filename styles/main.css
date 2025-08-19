@@ -525,19 +525,19 @@ select {
 .dashboard-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.8rem;
-  margin-top: 0.4rem;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
 }
 
 .dashboard-panel {
   display: grid;
   grid-template-rows: repeat(2, 1fr);
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 
 .dashboard-group {
   background: linear-gradient(180deg, #0e1420, #0b0f16);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--shadow-inset);
   transition: box-shadow 0.2s ease;
@@ -551,36 +551,36 @@ select {
   background: linear-gradient(90deg, #1a2233, #141822);
   color: var(--ink);
   font-weight: 600;
-  font-size: 13px;
-  padding: 0.5rem 0.7rem;
+  font-size: 11px;
+  padding: 0.3rem 0.5rem;
   text-align: center;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .group-content {
-  padding: 0.6rem;
+  padding: 0.4rem;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .group-content > div {
   background: #0b0f16;
   border: 1px solid #ffffff0a;
-  padding: 0.4rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   border-radius: var(--border-radius-sm);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 28px;
 }
 
 .group-content b {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--ink-dim);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.1rem;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -650,6 +650,7 @@ select {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .flex-start { align-items: flex-start; }
 .w-80 { width: 80px; }
@@ -660,14 +661,15 @@ select {
   color: #666;
   height: auto;
   min-height: 1.2em;
-  overflow: visible;
+  overflow: hidden;
   white-space: normal;
   font-family: monospace;
-  min-width: 200px;
+  min-width: 150px;
   max-width: 100%;
   flex-shrink: 1;
   word-wrap: break-word;
   line-height: 1.2;
+  text-overflow: ellipsis;
 }
 
 .currency-stellarium { color: var(--group-defense); }
@@ -705,7 +707,16 @@ select {
   }
   
   .dashboard-container {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+  
+  .exchange-rate {
+    min-width: 120px;
+  }
+  
+  .w-80 {
+    width: 70px;
   }
 }
 
@@ -761,7 +772,7 @@ select {
   
   .dashboard-container {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.6rem;
+    gap: 0.4rem;
   }
   
   .grid-3-cols {
@@ -840,7 +851,7 @@ select {
   
   .dashboard-container {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+    gap: 0.3rem;
   }
   
   .btn {
@@ -905,6 +916,9 @@ select {
   #exchangeRate {
     width: 100%;
     text-align: center;
+    min-width: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
