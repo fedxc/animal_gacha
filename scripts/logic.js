@@ -112,7 +112,7 @@ export const partyStats = () => {
 }
 
 // ===== Enemy Threat & Tank Gating =====
-const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.35) * 1.6
+const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.8) * 2.2
 export const tankSurvivalFactor = () => {
   const p = partyStats()
   const threat = enemyDps(S.enemy.level)
@@ -251,13 +251,24 @@ export const logMsg = (msg) => {
 
 // ===== Battle & Drops =====
 export const spawnEnemy = () => {
-  const lvl = Math.max(1, Math.floor(1 + Math.log10(1 + S.gold) * 2 + (S.enemy?.level || 1) * 0.05))
+  // Calculate enemy level based on character levels and gold
+  const partyLevels = partyUnits().map(u => u.level)
+  const avgLevel = partyLevels.reduce((sum, lvl) => sum + lvl, 0) / partyLevels.length
+  const maxLevel = Math.max(...partyLevels)
+  
+  // Base level from gold, but with minimum based on character levels
+  const goldBasedLevel = Math.max(1, Math.floor(1 + Math.log10(1 + S.gold) * 2 + (S.enemy?.level || 1) * 0.05))
+  const charBasedLevel = Math.floor(avgLevel * 0.8 + maxLevel * 0.2)
+  
+  // Use the higher of the two, but don't let it drop too much
+  const lvl = Math.floor(Math.max(goldBasedLevel, charBasedLevel, (S.enemy?.level || 1) * 0.9))
+  
   const type = pick(ENEMY_TYPES).id
-  const hp = Math.floor(100 + Math.pow(lvl, 1.8) * 18)
+  const hp = Math.floor(100 + Math.pow(lvl, 2.2) * 25)
   S.enemy = { level: lvl, type, hp, maxHp: hp }
   logMsg(`A ${ENEMY_TYPES.find((e) => e.id === type).name} appears (Lv ${lvl})`)
 }
-export const baseGoldPerKill = (lvl) => Math.floor((10 + lvl * 4) * GOLD_MULT)
+export const baseGoldPerKill = (lvl) => Math.floor((10 + lvl * 6) * GOLD_MULT)
 export const dropRolls = (enemyType, lvl) => {
   let c = {
     gold: 1,
@@ -279,7 +290,7 @@ export const dropRolls = (enemyType, lvl) => {
 
 export const awardWeapon = () => {
   const u = pick(partyUnits())
-  const power = Math.floor(rnd(1, 6) + Math.pow(S.enemy.level, 0.9))
+  const power = Math.floor(rnd(1, 8) + Math.pow(S.enemy.level, 1.1))
   const improved = power > u.bestWeapon
   if (improved) {
     u.bestWeapon = power
@@ -290,7 +301,7 @@ export const awardWeapon = () => {
 }
 export const awardArmor = () => {
   const u = pick(partyUnits())
-  const power = Math.floor(rnd(1, 4) + Math.pow(S.enemy.level, 0.8))
+  const power = Math.floor(rnd(1, 6) + Math.pow(S.enemy.level, 1.0))
   const improved = power > u.bestArmor
   if (improved) {
     u.bestArmor = power

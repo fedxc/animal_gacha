@@ -451,7 +451,7 @@ function formatJewel(j) {
     )
     .join(' • ')
   const roleColor = getRoleColor(j.role)
-  return `${j.name} <span style="color: ${roleColor}">[${j.role}]</span> <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
+  return `<span class="jewel-name">${j.name}</span> <span style="color: ${roleColor}">[${j.role}]</span> <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
 }
 
 // ===== PARTY RENDERING HELPERS =====
@@ -507,13 +507,12 @@ const setupUnitInfo = (node, unit, stats, dpsShare, etaLevelH) => {
   const infoEl = node.querySelector('.info')
   
   if (nameEl) {
-    nameEl.innerHTML = `<b>${unit.name}</b> <span class="role ${unit.role}">${unit.role}</span> <span class="stars">${'★'.repeat(unit.stars)}</span><span class="tiny"> Prestige ${unit.prestige} • Transcend ${unit.transcend}</span>`
+    nameEl.innerHTML = `<b>${unit.name}</b> <span class="role ${unit.role}">${unit.role}</span> <span class="stars">${'★'.repeat(unit.stars)}</span><br><span class="tiny">Prestige ${unit.prestige} • Transcend ${unit.transcend}</span>`
   }
   
   if (infoEl) {
     const armoryPower = Math.floor(unit.bestWeapon + unit.bestArmor)
-    const etaText = formatEtaText(etaLevelH)
-    infoEl.textContent = `Lv ${unit.level} • Armory Power: ${F_Game(armoryPower)} • DPS Share: ${F_Percent(dpsShare * 100)} • ETA Lvl: ${etaText}`
+    infoEl.innerHTML = `Lv ${unit.level} • Armory Power: ${F_Game(armoryPower)}<br>DPS Share: ${F_Percent(dpsShare * 100)}`
   }
 }
 
@@ -574,7 +573,7 @@ const setupJewelryDisplay = (node, unit) => {
   ]
   
   jewelsEl.innerHTML = jewelry
-    .map((j) => `<div>${formatJewel(j)}</div>`)
+    .map((j) => `<div class="jewel-item">${formatJewel(j)}</div>`)
     .join('')
 }
 
