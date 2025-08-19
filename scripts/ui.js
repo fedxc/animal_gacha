@@ -78,6 +78,10 @@ export const renderDashboard = () => {
     `<div><b>Eternium/hr</b>${m.eteh.toFixed(3)}</div>`,
     `<div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : m.etaDiaH.toFixed(2) + 'h'}</div>`,
     `<div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : m.etaEteH.toFixed(2) + 'h'}</div>`,
+    // Party balance diagnostics
+    `<div><b>Tank EHP</b>${F(m.tankEhp)}</div>`,
+    `<div><b>Req EHP</b>${F(m.reqEhp)}</div>`,
+    `<div><b>Guard</b>${m.guard.toFixed(2)}</div>`,
   ].join('')
 }
 

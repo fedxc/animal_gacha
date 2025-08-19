@@ -56,6 +56,11 @@ export const computeUnitStats = (unit) => {
   let crit = clamp(unit.base.crit + 0.01 * (unit.level - 1), 0, 0.9)
   dps *= 1 + 0.05 * S.upgrades.dps
   crit = clamp(crit + 0.01 * S.upgrades.crit, 0, 0.9)
+  // Role tuning: strengthen Fighter
+  if (unit.role === 'FIGHTER') {
+    dps *= 1.25
+    crit = clamp(crit + 0.03, 0, 0.9)
+  }
   let stats = { dps, hp, armor, crit, goldPct: 0 }
   stats = applyJewelry(unit, stats)
   const ehp = hp * (1 + armor / 100)
@@ -89,13 +94,24 @@ export const computeUnitStatsWithJewels = (unit, jIds) => {
 }
 
 export const partyStats = () => {
-  let p = { dps: 0, goldPct: 0 }
+  let p = { dps: 0, goldPct: 0, tankEhp: 0 }
   partyUnits().forEach((u) => {
     const st = computeUnitStats(u)
     p.dps += st.effDps
     p.goldPct += st.goldPct
+    if (u.role === 'TANK') p.tankEhp = Math.max(p.tankEhp, st.ehp)
   })
   return p
+}
+
+// ===== Enemy Threat & Tank Gating =====
+const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.35) * 1.6
+export const tankSurvivalFactor = () => {
+  const p = partyStats()
+  const threat = enemyDps(S.enemy.level)
+  const windowSec = 8
+  const ratio = p.tankEhp / (threat * windowSec)
+  return clamp(0.2 + 0.8 * clamp(ratio, 0, 1), 0.2, 1)
 }
 
 // ===== Jewelry =====
@@ -320,7 +336,8 @@ export const processKill = () => {
 
 export const tick = (dt) => {
   const p = partyStats()
-  const d = p.dps * dt
+  const guard = tankSurvivalFactor()
+  const d = p.dps * guard * dt
   S.enemy.hp -= d
   if (S.enemy.hp <= 0) {
     processKill()
@@ -381,7 +398,8 @@ export const eta = (remaining, perHour) => (perHour > 0 ? remaining / perHour : 
 
 export const calcMetrics = () => {
   const p = partyStats()
-  const kps = clamp(p.dps / S.enemy.maxHp, 0, 1000)
+  const guard = tankSurvivalFactor()
+  const kps = clamp((p.dps * guard) / S.enemy.maxHp, 0, 1000)
   const ch = dropRolls(S.enemy.type, S.enemy.level)
   const goldPerKill =
     baseGoldPerKill(S.enemy.level) * (1 + 0.07 * S.upgrades.gold) * (1 + p.goldPct)
@@ -395,20 +413,30 @@ export const calcMetrics = () => {
   const nEte = transcendEarned()
   const nextEteGold = Math.pow((nEte + 1) / ETE_K, 2)
   const etaEteH = eta(Math.max(0, nextEteGold - S.gold), gph)
+  const threat = enemyDps(S.enemy.level)
+  const windowSec = 8
+  const reqEhp = threat * windowSec
   return {
     kpm: kps * 60,
-    ttk: p.dps > 0 ? S.enemy.hp / p.dps : Infinity,
+    ttk: p.dps > 0 ? S.enemy.hp / (p.dps * guard) : Infinity,
     gph,
     tph,
     weph: ch.weapon * kps * 3600,
     arph: ch.armor * kps * 3600,
     jwph: ch.jewelry * kps * 3600,
     goldPerKill,
-    dps: p.dps,
+    dps: p.dps * guard,
     diah,
     eteh,
     etaDiaH,
     etaEteH,
+    // Party balance diagnostics
+    rawDps: p.dps,
+    guard,
+    tankEhp: p.tankEhp,
+    threat,
+    reqEhp,
+    windowSec,
   }
 }
 
