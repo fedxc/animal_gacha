@@ -420,12 +420,12 @@ export const renderDashboard = () => {
     </div>
     
     <div class="dashboard-panel">
-      <div class="dashboard-group loot-stats">
-        <div class="group-header">🎁 Loot Generation</div>
+      <div class="dashboard-group defense-stats">
+        <div class="group-header">🛡️ Defense & Survival</div>
         <div class="group-content">
-          <div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>
-          <div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>
-          <div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>
+          <div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>
+          <div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>
+          <div><b>Guard</b>${F_Dashboard(m.guard)}</div>
         </div>
       </div>
       
@@ -440,23 +440,22 @@ export const renderDashboard = () => {
     </div>
     
     <div class="dashboard-panel">
-      <div class="dashboard-group market-stats">
-        <div class="group-header">📊 Market Trends</div>
+      <div class="dashboard-group loot-stats">
+        <div class="group-header">🎁 Loot Generation</div>
         <div class="group-content">
-          <div><b>STE Trend</b>${getMarketTrend('ste')}</div>
-          <div><b>NEB Trend</b>${getMarketTrend('neb')}</div>
-          <div><b>VOR Trend</b>${getMarketTrend('vor')}</div>
+          <div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>
+          <div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>
+          <div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>
         </div>
       </div>
-      
-      <div class="dashboard-group defense-stats">
-        <div class="group-header">🛡️ Defense & Survival</div>
-        <div class="group-content">
-          <div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>
-          <div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>
-          <div><b>Guard</b>${F_Dashboard(m.guard)}</div>
-        </div>
+    <div class="dashboard-group market-stats">
+      <div class="group-header">📊 Market Trends</div>
+      <div class="group-content">
+        <div><b>STE Trend</b>${getMarketTrend('ste')}</div>
+        <div><b>NEB Trend</b>${getMarketTrend('neb')}</div>
+        <div><b>VOR Trend</b>${getMarketTrend('vor')}</div>
       </div>
+    </div>
     </div>
   `
 }
