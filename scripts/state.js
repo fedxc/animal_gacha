@@ -43,6 +43,7 @@ export const ENEMY_TYPES = [
   { id: 'saberling', name: 'Saberling', bias: 'weapon' },
   { id: 'gemspider', name: 'Gemspider', bias: 'jewelry' },
   { id: 'gildermite', name: 'Gildermite', bias: 'gold' },
+  { id: 'diamonster', name: 'Diamonster', bias: 'diamond', special: true },
 ]
 
 export const DEFAULT_STATE = {

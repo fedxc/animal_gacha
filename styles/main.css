@@ -529,6 +529,12 @@ select {
   margin-top: 0.4rem;
 }
 
+.dashboard-panel {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.8rem;
+}
+
 .dashboard-group {
   background: linear-gradient(180deg, #0e1420, #0b0f16);
   border-radius: 12px;

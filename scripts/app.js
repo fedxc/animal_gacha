@@ -1,8 +1,8 @@
 /*
  * App bootstrap and main loop.
  */
-import { now } from './utils.js?v=20250820_2'
-import { S, load, save, partyUnits } from './state.js?v=20250820_2'
+import { now } from './utils.js?v=20250820_3'
+import { S, load, save, partyUnits } from './state.js?v=20250820_3'
 import {
   tick,
   spawnEnemy,
@@ -14,7 +14,7 @@ import {
   calcMetrics,
   prestigeGoldReq,
   awardJewelry,
-} from './logic.js?v=20250820_2'
+} from './logic.js?v=20250820_3'
 import {
   render,
   bindTopBar,
@@ -23,7 +23,7 @@ import {
   renderResets,
   drawAllSparks,
   refreshAffordability,
-} from './ui.js?v=20250820_2'
+} from './ui.js?v=20250820_3'
 
 let loopHandle = null
 let sampleTimer = 0

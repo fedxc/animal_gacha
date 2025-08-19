@@ -44,9 +44,11 @@ export const formatNumber = (x, options = {}) => {
       { threshold: 1e33, suffix: 'Dc' }
     ]
     
-    for (const abbr of abbreviations) {
-      if (x < abbr.threshold) {
-        const val = x / (abbr.threshold / 1e3)
+    // Find the appropriate abbreviation by checking from largest to smallest
+    for (let i = abbreviations.length - 1; i >= 0; i--) {
+      const abbr = abbreviations[i]
+      if (x >= abbr.threshold) {
+        const val = x / abbr.threshold
         const isWhole = val % 1 === 0
         const decimalPlaces = isWhole ? 0 : config.decimals
         return val.toFixed(decimalPlaces) + abbr.suffix

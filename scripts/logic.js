@@ -1,8 +1,8 @@
 /*
  * Core game mechanics: stats, combat, loot and progression.
  */
-import { clamp, chance, pick, rnd, F, F_Game, F_Price, F_Stats } from './utils.js?v=20250820_2'
-import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js?v=20250820_2'
+import { clamp, chance, pick, rnd, F, F_Game, F_Price, F_Stats } from './utils.js?v=20250820_3'
+import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js?v=20250820_3'
 
 // ===== Units & Stats =====
 // Global gold multiplier to increase gold rate everywhere
@@ -112,7 +112,7 @@ export const partyStats = () => {
 }
 
 // ===== Enemy Threat & Tank Gating =====
-const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.8) * 2.2
+const enemyDps = (lvl) => 6 + Math.pow(lvl, 1.4) * 1.8
 export const tankSurvivalFactor = () => {
   const p = partyStats()
   const threat = enemyDps(S.enemy.level)
@@ -263,10 +263,24 @@ export const spawnEnemy = () => {
   // Use the higher of the two, but don't let it drop too much
   const lvl = Math.floor(Math.max(goldBasedLevel, charBasedLevel, (S.enemy?.level || 1) * 0.9))
   
-  const type = pick(ENEMY_TYPES).id
-  const hp = Math.floor(100 + Math.pow(lvl, 2.2) * 25)
+  // Very rare chance to spawn the special Diamonster (0.1% chance)
+  let type
+  if (chance(0.001)) {
+    type = 'diamonster'
+    logMsg(`💎 A legendary Diamonster appears! (Lv ${lvl})`)
+  } else {
+    // Filter out special enemies for normal spawning
+    const normalEnemies = ENEMY_TYPES.filter(e => !e.special)
+    type = pick(normalEnemies).id
+  }
+  
+  const hp = Math.floor(100 + Math.pow(lvl, 1.8) * 20)
   S.enemy = { level: lvl, type, hp, maxHp: hp }
-  logMsg(`A ${ENEMY_TYPES.find((e) => e.id === type).name} appears (Lv ${lvl})`)
+  
+  // Only log normal enemy spawns (special ones are logged above)
+  if (type !== 'diamonster') {
+    logMsg(`A ${ENEMY_TYPES.find((e) => e.id === type).name} appears (Lv ${lvl})`)
+  }
 }
 export const baseGoldPerKill = (lvl) => Math.floor((10 + lvl * 6) * GOLD_MULT)
 export const dropRolls = (enemyType, lvl) => {
@@ -341,6 +355,14 @@ export const processKill = () => {
   logMsg(`+${F_Game(goldGain)} gold`)
   // After gold changes, proactively refresh UI affordability
   document && document.dispatchEvent && document.dispatchEvent(new CustomEvent('gold-change'))
+  
+  // Special DIA drop for Diamonster (1% chance)
+  if (S.enemy.type === 'diamonster' && chance(0.01)) {
+    const diaAmount = Math.floor(rnd(1, 5))
+    S.meta.diamantium += diaAmount
+    logMsg(`💎 DIAMONSTER DROP! +${F_Game(diaAmount)} DIA!`)
+  }
+  
   const ch = dropRolls(S.enemy.type, lvl)
   if (chance(ch.ticket)) {
     S.tickets += 1
@@ -430,8 +452,6 @@ export const calcMetrics = () => {
   const nextDiaGold = Math.pow(10, (nDia + 1) / DIA_K) - 1
   const etaDiaH = eta(Math.max(0, nextDiaGold - S.gold), gph)
   const nEte = transcendEarned()
-  const nextEteGold = Math.pow((nEte + 1) / ETE_K, 2)
-  const etaEteH = eta(Math.max(0, nextEteGold - S.gold), gph)
   const threat = enemyDps(S.enemy.level)
   const windowSec = 8
   const reqEhp = threat * windowSec
@@ -448,7 +468,6 @@ export const calcMetrics = () => {
     diah,
     eteh,
     etaDiaH,
-    etaEteH,
     // Party balance diagnostics
     rawDps: p.dps,
     guard,
