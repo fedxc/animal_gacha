@@ -20,7 +20,8 @@ export const applyJewelry = (unit, stats, jIds = null) => {
     if (!jid) return
     const j = S.inventory.jewelry[jid]
     if (!j) return
-    const scale = 1 + 0.08 * Math.pow(j.itemLevel, 0.85)
+    // Slightly stronger scaling so higher-level jewels are clearly upgrades
+    const scale = 1 + 0.12 * Math.pow(j.itemLevel, 0.85)
     add.dpsPct += (j.effects.dpsPct || 0) * scale
     add.goldPct += (j.effects.goldPct || 0) * scale
     add.armorPct += (j.effects.armorPct || 0) * scale
@@ -97,10 +98,18 @@ export const partyStats = () => {
 
 // ===== Jewelry =====
 let _jid_counter = 1
+function nextJewelId() {
+  // Ensure uniqueness across reloads by avoiding collisions with existing inventory ids
+  let id = 'J' + _jid_counter++
+  while (S && S.inventory && S.inventory.jewelry && S.inventory.jewelry[id]) {
+    id = 'J' + _jid_counter++
+  }
+  return id
+}
 export const makeJewelry = (forRole, lvl) => {
   const minUnitLevel = Math.max(1, Math.round(lvl / 5) * 5)
   const itemLevel = minUnitLevel
-  const id = 'J' + _jid_counter++
+  const id = nextJewelId()
   const names = {
     TANK: ['Gravity Core', 'Aegis Kernel', 'Stoneheart Node'],
     MAGE: ['Nebula Pendant', 'Quasar Lattice', 'Aether Prism'],
@@ -135,6 +144,9 @@ export function autoManageJewelry() {
   if (!S || !S.inventory || !S.inventory.jewelry) return
   const prevEquips = {}
   partyUnits().forEach((u) => {
+    // Normalize jewelry array to length 3 with nulls so open slots are preserved
+    if (!Array.isArray(u.jewelry)) u.jewelry = [null, null, null]
+    while (u.jewelry.length < 3) u.jewelry.push(null)
     prevEquips[u.id] = (u.jewelry || []).slice()
   })
   const pool = Object.values(S.inventory.jewelry).slice()
@@ -152,9 +164,27 @@ export function autoManageJewelry() {
         !assigned.has(j.id) && (j.role === 'ANY' || j.role === u.role) && u.level >= j.minUnitLevel,
     )
     candidates.sort((a, b) => jewelScore(u, b) - jewelScore(u, a))
-    const picks = candidates.slice(0, 3)
-    picks.forEach((j) => assigned.add(j.id))
-    u.jewelry = [picks[0]?.id || null, picks[1]?.id || null, picks[2]?.id || null]
+    // Start from current equips; upgrade only if strictly better, otherwise keep existing to avoid removals
+    const current = (prevEquips[u.id] || []).slice(0, 3)
+    while (current.length < 3) current.push(null)
+    const result = current.slice()
+    for (let slot = 0; slot < 3; slot++) {
+      const curId = current[slot]
+      const curJ = curId ? S.inventory.jewelry[curId] : null
+      const best = candidates.find((j) => !assigned.has(j.id) && !result.includes(j.id))
+      if (!best) continue
+      const baseEff = computeUnitStatsWithJewels(u, curJ ? [curJ.id] : []).effDps
+      const withBest = computeUnitStatsWithJewels(u, [best.id]).effDps
+      if (!curJ || withBest > baseEff) {
+        result[slot] = best.id
+        assigned.add(best.id)
+      }
+    }
+    u.jewelry = result
+    // Ensure all finally equipped jewels are marked as assigned so other units cannot reuse them
+    result.forEach((id) => {
+      if (id) assigned.add(id)
+    })
   }
   autoSellJewelry()
 }
@@ -167,49 +197,24 @@ function autoSellJewelry() {
       if (id) inUse.add(id)
     }),
   )
-  const all = Object.values(S.inventory.jewelry)
-  const toSell = []
-  all.forEach((j) => {
-    if (inUse.has(j.id)) return
-    const equipUnits = partyUnits().filter(
-      (u) => u.level >= j.minUnitLevel && (j.role === 'ANY' || j.role === u.role),
-    )
-    if (equipUnits.length === 0) return
-    let best = false
-    for (const u of equipUnits) {
-      const candidates = all.filter(
-        (k) => (k.role === 'ANY' || k.role === u.role) && u.level >= k.minUnitLevel,
-      )
-      candidates.sort((a, b) => jewelScore(u, b) - jewelScore(u, a))
-      const top3 = candidates.slice(0, 3).map((k) => k.id)
-      if (top3.includes(j.id)) {
-        best = true
-        break
-      }
-    }
-    if (!best) toSell.push(j)
-  })
+  const list = Object.values(S.inventory.jewelry)
+  // Do not sell anything if we are under the inventory limit; preserve past jewels
+  if (list.length <= limit) return
+
+  // If over the limit, sell the lowest-value unequipped ones until we are back under
+  const overflow = list.length - limit
+  const candidates = list
+    .filter((j) => !inUse.has(j.id))
+    .sort((a, b) => a.itemLevel - b.itemLevel)
+  let sold = 0
   let goldGained = 0
-  toSell.forEach((j) => {
+  for (let i = 0; i < overflow && i < candidates.length; i++) {
+    const j = candidates[i]
     goldGained += jewelSaleValue(j)
     delete S.inventory.jewelry[j.id]
-  })
-  if (toSell.length > 0)
-    logMsg(`🗑️ Auto-sold ${toSell.length} dominated jewels (+${goldGained} gold)`)
-  let list = Object.values(S.inventory.jewelry)
-  if (list.length > limit) {
-    const overflow = list.length - limit
-    const candidates = list
-      .filter((j) => !inUse.has(j.id))
-      .sort((a, b) => a.itemLevel - b.itemLevel)
-    let gold2 = 0
-    for (let i = 0; i < overflow && i < candidates.length; i++) {
-      const j = candidates[i]
-      gold2 += jewelSaleValue(j)
-      delete S.inventory.jewelry[j.id]
-    }
-    if (overflow > 0) logMsg(`🗑️ Auto-sold ${overflow} low-value jewels (+${gold2} gold)`)
+    sold += 1
   }
+  if (sold > 0) logMsg(`🗑️ Auto-sold ${sold} low-value jewels (+${goldGained} gold)`) 
 }
 
 // ===== Logging =====
@@ -231,17 +236,19 @@ export const baseGoldPerKill = (lvl) => Math.floor(10 + lvl * 4)
 export const dropRolls = (enemyType, lvl) => {
   let c = {
     gold: 1,
-    ticket: 0.03 + lvl * 0.0008,
+    // Increased ticket base and per-level scaling
+    ticket: 0.06 + lvl * 0.0016,
     weapon: 0.14 + lvl * 0.0009,
     armor: 0.14 + lvl * 0.0009,
-    jewelry: 0.012 + lvl * 0.0003,
+    // Increased base jewelry chance and per-level growth (higher than previous)
+    jewelry: 0.08 + lvl * 0.0018,
   }
   const bias = ENEMY_TYPES.find((e) => e.id === enemyType)?.bias
   if (bias === 'gold') c.gold *= 1.2
-  if (bias === 'ticket') c.ticket *= 1.7
+  if (bias === 'ticket') c.ticket *= 2.2
   if (bias === 'weapon') c.weapon *= 1.5
   if (bias === 'armor') c.armor *= 1.5
-  if (bias === 'jewelry') c.jewelry *= 2
+  if (bias === 'jewelry') c.jewelry *= 2.4
   return c
 }
 
@@ -251,7 +258,7 @@ export const awardWeapon = () => {
   const improved = power > u.bestWeapon
   if (improved) {
     u.bestWeapon = power
-    logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS) [best]`)
+    logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS) [UPGRADE]`)
   } else {
     logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS)`)
   }
@@ -262,7 +269,7 @@ export const awardArmor = () => {
   const improved = power > u.bestArmor
   if (improved) {
     u.bestArmor = power
-    logMsg(`🛡️ ${u.name} found armor (+${power} Armor) [best]`)
+    logMsg(`🛡️ ${u.name} found armor (+${power} Armor) [UPGRADE]`)
   } else {
     logMsg(`🛡️ ${u.name} found armor (+${power} Armor)`)
   }
@@ -270,7 +277,20 @@ export const awardArmor = () => {
 export const awardJewelry = () => {
   const roles = [...new Set(partyUnits().map((u) => u.role))]
   const role = chance(0.7) ? pick(roles) : pick(['TANK', 'MAGE', 'FIGHTER', 'ANY'])
-  const j = makeJewelry(role, S.enemy.level)
+  // Ensure new jewels are strictly higher level than anything owned or equipped
+  const owned = Object.values(S.inventory.jewelry)
+  const ownedMax = owned.length ? Math.max(...owned.map((j) => j.itemLevel || 0)) : 0
+  const equippedMax = Math.max(
+    0,
+    ...partyUnits()
+      .flatMap((u) => u.jewelry)
+      .map((id) => (id && S.inventory.jewelry[id] ? S.inventory.jewelry[id].itemLevel : 0)),
+  )
+  const targetLevel = Math.max(S.enemy.level, ownedMax, equippedMax) + 1
+  const j = makeJewelry(role, targetLevel)
+  // Force item level to the target (override any internal rounding)
+  j.itemLevel = targetLevel
+  j.minUnitLevel = Math.max(1, Math.round(targetLevel / 5) * 5)
   S.inventory.jewelry[j.id] = j
   logMsg(`💍 Found ${j.name} [${j.role}] (Lv ${j.itemLevel} • req Lv ${j.minUnitLevel})`)
   autoManageJewelry()
@@ -344,8 +364,14 @@ export const summonOnce = () => {
 }
 
 // ===== Metrics & Progression =====
-export const computePrestigeHr = (gph, gold) => Math.log10(gold + gph + 1) - Math.log10(gold + 1)
-export const computeTranscendHr = (gph, gold) => Math.sqrt(gold + gph) - Math.sqrt(gold)
+// Reward scaling factors (tune to taste)
+const DIA_K = 1.5
+const ETE_K = 1.5
+
+export const computePrestigeHr = (gph, gold) =>
+  DIA_K * (Math.log10(gold + gph + 1) - Math.log10(gold + 1))
+export const computeTranscendHr = (gph, gold) =>
+  ETE_K * (Math.sqrt(gold + gph) - Math.sqrt(gold))
 export const eta = (remaining, perHour) => (perHour > 0 ? remaining / perHour : Infinity)
 
 export const calcMetrics = () => {
@@ -358,11 +384,11 @@ export const calcMetrics = () => {
   const tph = ch.ticket * kps * 3600
   const diah = computePrestigeHr(gph, S.gold)
   const eteh = computeTranscendHr(gph, S.gold)
-  const nDia = Math.floor(Math.log10(S.gold + 1))
-  const nextDiaGold = Math.pow(10, nDia + 1) - 1
+  const nDia = prestigeEarned()
+  const nextDiaGold = Math.pow(10, (nDia + 1) / DIA_K) - 1
   const etaDiaH = eta(Math.max(0, nextDiaGold - S.gold), gph)
-  const nEte = Math.floor(Math.sqrt(S.gold))
-  const nextEteGold = Math.pow(nEte + 1, 2)
+  const nEte = transcendEarned()
+  const nextEteGold = Math.pow((nEte + 1) / ETE_K, 2)
   const etaEteH = eta(Math.max(0, nextEteGold - S.gold), gph)
   return {
     kpm: kps * 60,
@@ -394,21 +420,66 @@ export function pushHist() {
 }
 
 // ===== Prestige / Transcend =====
-export const prestigeEarned = () => Math.floor(Math.log10(S.gold + 1))
-export const transcendEarned = () => Math.floor(Math.sqrt(S.gold))
+// Optional bonuses: 5★ units and equipped jewel levels amplify Diamantium
+export const fiveStarBonusMultiplier = () => {
+  const units = partyUnits()
+  if (units.length === 0) return 1
+  const fiveCount = units.filter((u) => u.stars >= 5).length
+  const frac = fiveCount / units.length
+  // Up to +60% at full 5★ party
+  return 1 + 0.6 * frac
+}
+
+export const avgEquippedJewelLevel = () => {
+  const levels = []
+  partyUnits().forEach((u) => {
+    (u.jewelry || []).forEach((id) => {
+      if (!id) return
+      const j = S.inventory.jewelry[id]
+      if (j && typeof j.itemLevel === 'number') levels.push(j.itemLevel)
+    })
+  })
+  if (levels.length === 0) return 0
+  return levels.reduce((a, b) => a + b, 0) / levels.length
+}
+
+export const jewelsBonusMultiplier = () => {
+  const avg = avgEquippedJewelLevel()
+  // +2% per average jewel level; soft cap at +100%
+  const bonus = Math.min(1, 0.02 * avg)
+  return 1 + bonus
+}
+
+export const prestigeEarned = () => {
+  const base = Math.max(0, Math.floor(DIA_K * Math.log10(S.gold + 1)))
+  const mult = fiveStarBonusMultiplier() * jewelsBonusMultiplier()
+  return Math.floor(base * mult)
+}
+export const transcendEarned = () => Math.max(0, Math.floor(ETE_K * Math.sqrt(S.gold)))
 export const prestigeGoldReq = () => Math.floor(10000 * Math.pow(1.6, S.meta?.prestiges || 0))
 
 export function prestigeRequirements() {
   const needGold = prestigeGoldReq()
   const goldOk = S.gold >= needGold
   const starsOk = partyUnits().every((u) => u.stars >= 5)
+  // Optional goal: all 3 jewels each (for progress display only)
   const jewelsOk = partyUnits().every((u) => u.jewelry.filter(Boolean).length === 3)
   return { goldOk, starsOk, jewelsOk, needGold }
 }
 
 export const canPrestige = () => {
   const r = prestigeRequirements()
-  return r.goldOk && r.starsOk && r.jewelsOk
+  // Only gold is mandatory now
+  return r.goldOk
+}
+
+// Breakdown for UI
+export const prestigePotentialBreakdown = () => {
+  const base = Math.max(0, Math.floor(DIA_K * Math.log10(S.gold + 1)))
+  const starMult = fiveStarBonusMultiplier()
+  const jewelMult = jewelsBonusMultiplier()
+  const total = Math.floor(base * starMult * jewelMult)
+  return { base, starMult, jewelMult, total }
 }
 export const canTranscend = () => S.meta.diamantium >= 25
 

@@ -102,7 +102,8 @@ export const start = () => {
   if (!S.enemy || !S.enemy.hp) spawnEnemy()
   autoManageJewelry()
   render()
-  runTests()
+  // Only run tests when explicitly requested (prevents awarding items on load)
+  if (location.search.includes('dev=1')) runTests()
   loopHandle = setInterval(loop, 250)
   setInterval(save, 10000)
 }

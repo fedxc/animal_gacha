@@ -19,6 +19,7 @@ import {
   logMsg,
   autoManageJewelry,
   awardJewelry,
+  prestigePotentialBreakdown,
 } from './logic.js'
 
 // SVG Icons
@@ -119,30 +120,38 @@ export const renderResets = () => {
     <div class="reset-block">
       <b>Prestige ➜ Diamantium</b>
       <div class="tiny clamp2">
-        Reset party; grants Diamantium; requires ALL:
-        <span class="nowrap">≥ ${F(req.needGold)} gold</span>,
-        <span class="nowrap">5★ each</span>, and
-        <span class="nowrap">3/3 jewels on each</span>.
-        Cost threshold scales each prestige.
+        Reset party; grants DIA. Requirements:
+        <span class="nowrap"><b>Gold ≥ ${F(req.needGold)}</b> (mandatory)</span>.
       </div>
       <div class="tiny" style="margin-top:.25rem">
         <span class="${req.goldOk ? '' : 'miss'}">${req.goldOk ? '✓' : '✗'} Gold ≥ ${F(req.needGold)} (you: ${F(S.gold)})</span>
-        <span class="tag" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.starsOk ? '✓' : '✗'} 5★ each</span>
-        <span class="tag" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--bad)'}">${req.jewelsOk ? '✓' : '✗'} 3 jewels each</span>
+        <span class="tag" title="Optional" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.starsOk ? '✓' : '○'} 5★ each (optional)</span>
+        <span class="tag" title="Optional" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.jewelsOk ? '✓' : '○'} 3 jewels each (optional)</span>
       </div>
+      ${(() => { const b = prestigePotentialBreakdown(); return `<div class=\"tiny\" style=\"margin:.25rem 0\">Potential breakdown: base ${b.base} × stars ${b.starMult.toFixed(2)} × jewels ${b.jewelMult.toFixed(2)} = <b>${b.total}</b></div>` })()}
       <button class="btn" id="btnPrestige" ${canPrestige() ? '' : 'disabled'} title="${canPrestige() ? 'Gain ' + diaEarn + ' Dia' : 'Meet all requirements to prestige'}">Prestige</button>
-      <div class="tiny">Potential: +${diaEarn} Dia</div>
+      <div class="tiny">Potential: +${diaEarn} DIA</div>
     </div>
     <div class="reset-block">
       <b>Transcend ➜ Eternium</b>
-      <div class="tiny">Resets deeper; requires 25 Diamantium. Grants Eternium; bigger multipliers.</div>
-      <button class="btn" id="btnTranscend" ${canTranscend() ? '' : 'disabled'} title="${canTranscend() ? 'Gain ~' + eteEarn + ' Ete' : 'Need 25 Diamantium'}">Transcend</button>
+      <div class="tiny">Resets deeper; requires 25 DIA. Grants Eternium; bigger multipliers.</div>
+      <button class="btn" id="btnTranscend" ${canTranscend() ? '' : 'disabled'} title="${canTranscend() ? 'Gain ~' + eteEarn + ' Ete' : 'Need 25 DIA'}">Transcend</button>
     </div>
   `
   const b1 = el('#btnPrestige'),
     b2 = el('#btnTranscend')
-  if (b1) b1.onclick = prestigeReset
-  if (b2) b2.onclick = transcendReset
+  if (b1)
+    b1.onclick = () => {
+      prestigeReset()
+      render()
+      save()
+    }
+  if (b2)
+    b2.onclick = () => {
+      transcendReset()
+      render()
+      save()
+    }
 }
 
 function formatJewel(j) {

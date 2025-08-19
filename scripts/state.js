@@ -25,13 +25,6 @@ export const UNIT_POOL = [
     base: { dps: 10, hp: 120, crit: 0.12, armor: 10 },
     enabled: true,
   },
-  {
-    id: 'bulwarkat',
-    name: 'Bulwarkat',
-    role: 'TANK',
-    base: { dps: 7, hp: 150, crit: 0.06, armor: 20 },
-    enabled: false,
-  },
 ]
 
 export const ENEMY_TYPES = [
@@ -45,6 +38,11 @@ export const ENEMY_TYPES = [
   { id: 'aurorling', name: 'Aurorling', bias: 'gold' },
   { id: 'chronowasp', name: 'Chronowasp', bias: 'jewelry' },
   { id: 'psiloclaw', name: 'Psiloclaw', bias: 'armor' },
+  { id: 'aegiscrawler', name: 'Aegiscrawler', bias: 'armor' },
+  { id: 'stubmote', name: 'Stubmote', bias: 'ticket' },
+  { id: 'saberling', name: 'Saberling', bias: 'weapon' },
+  { id: 'gemspider', name: 'Gemspider', bias: 'jewelry' },
+  { id: 'gildermite', name: 'Gildermite', bias: 'gold' },
 ]
 
 export const DEFAULT_STATE = {
