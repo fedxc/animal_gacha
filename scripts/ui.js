@@ -26,12 +26,40 @@ import {
   classPower,
 } from './logic.js?v=20250820_1'
 
+// ===== CONSTANTS =====
+
 // Character type color accents and anime-style SVG icons
 const ROLE_COLORS = {
   TANK: '#3b82f6',    // Blue
   MAGE: '#8b5cf6',    // Purple  
   FIGHTER: '#ef4444', // Red
 }
+
+// Default fallback color for unknown roles
+const DEFAULT_ROLE_COLOR = '#6b7280'
+
+// Chart dimensions
+const CHART_WIDTH = 200
+const CHART_HEIGHT = 60
+const CHART_PADDING = 2
+
+// Upgrade costs and scaling
+const UPGRADE_BASE_COSTS = {
+  dps: 100,
+  gold: 120,
+  crit: 150
+}
+const UPGRADE_SCALING_FACTOR = 1.35
+
+// Dev command defaults
+const DEFAULT_DEV_COMMAND = "tickets 50 | gold 1e6 | win | dia 10 | ete 1 | ste 5 | neb 5 | vor 5 | jewelry"
+
+// Power thresholds for visual effects
+const HIGH_POWER_THRESHOLD = 80
+const POWER_BAR_MAX = 100
+
+// Currency trading defaults
+const MIN_TRADE_AMOUNT = 1
 
 // Anime-style SVG icons inspired by the character images
 const SVG_ICONS = {
@@ -144,7 +172,7 @@ const SVG_ICONS = {
   </svg>`
 }
 
-const getRoleColor = (role) => ROLE_COLORS[role] || '#6b7280'
+const getRoleColor = (role) => ROLE_COLORS[role] || DEFAULT_ROLE_COLOR
 const getRoleIcon = (role) => SVG_ICONS[role] || SVG_ICONS.TANK
 
 export const renderTop = () => {
@@ -233,9 +261,7 @@ export const renderDashboard = () => {
 function drawSpark(id, arr) {
   const svg = el('#' + id)
   if (!svg) return
-  const w = 200,
-    h = 60
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+  svg.setAttribute('viewBox', `0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`)
   const n = arr.length
   if (n < 2) {
     svg.innerHTML = ''
@@ -246,8 +272,8 @@ function drawSpark(id, arr) {
   if (min === max) min = 0
   const pts = arr
     .map((v, i) => {
-      const x = (i * (w - 4)) / (n - 1) + 2
-      const y = h - 2 - ((v - min) / (max - min || 1)) * (h - 4)
+      const x = (i * (CHART_WIDTH - CHART_PADDING * 2)) / (n - 1) + CHART_PADDING
+      const y = CHART_HEIGHT - CHART_PADDING - ((v - min) / (max - min || 1)) * (CHART_HEIGHT - CHART_PADDING * 2)
       return `${F_Game(x)},${F_Game(y)}`
     })
     .join(' ')
@@ -324,98 +350,283 @@ function formatJewel(j) {
   return `${j.name} <span style="color: ${roleColor}">[${j.role}]</span> <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
 }
 
+// ===== PARTY RENDERING HELPERS =====
+
+const createUnitCard = (unit, metrics) => {
+  const tmpl = el('#party-card')
+  if (!tmpl) return null
+  
+  const node = tmpl.content.firstElementChild.cloneNode(true)
+  const stats = computeUnitStats(unit)
+  const levelCost = levelUpCost(unit.level)
+  const canAfford = canAffordUpgrade(levelCost)
+  const missingGold = calculateMissingGold(levelCost)
+  const dpsShare = calculateDpsShare(stats.effDps, metrics.dps)
+  const etaLevelH = calculateEtaLevel(missingGold, metrics.gph)
+  
+  setupUnitIcon(node, unit)
+  setupUnitStyling(node, unit)
+  setupUnitInfo(node, unit, stats, dpsShare, etaLevelH)
+  setupLevelUpButton(node, unit, levelCost, canAfford, missingGold)
+  setupUnitStats(node, stats, unit)
+  setupPowerBar(node, unit)
+  setupJewelryDisplay(node, unit)
+  
+  return node
+}
+
+const setupUnitIcon = (node, unit) => {
+  if (!validateElement(node, 'Node') || !unit) {
+    console.warn('Invalid parameters for setupUnitIcon:', { node, unit })
+    return
+  }
+  
+  const iconEl = node.querySelector('.icon')
+  if (!validateElement(iconEl, 'Icon')) return
+  
+  const roleIcon = getRoleIcon(unit.role)
+  iconEl.innerHTML = roleIcon
+}
+
+const setupUnitStyling = (node, unit) => {
+  if (!validateElement(node, 'Node') || !unit) {
+    console.warn('Invalid parameters for setupUnitStyling:', { node, unit })
+    return
+  }
+  
+  const roleColor = getRoleColor(unit.role)
+  node.style.background = `linear-gradient(180deg, var(--panel), var(--panel-2)), linear-gradient(135deg, ${roleColor}10 0%, transparent 50%)`
+}
+
+const setupUnitInfo = (node, unit, stats, dpsShare, etaLevelH) => {
+  const nameEl = node.querySelector('.name')
+  const infoEl = node.querySelector('.info')
+  
+  if (nameEl) {
+    nameEl.innerHTML = `<b>${unit.name}</b> <span class="role ${unit.role}">${unit.role}</span> <span class="stars">${'★'.repeat(unit.stars)}</span><span class="tiny"> Prestige ${unit.prestige} • Transcend ${unit.transcend}</span>`
+  }
+  
+  if (infoEl) {
+    const armoryPower = Math.floor(unit.bestWeapon + unit.bestArmor)
+    const etaText = formatEtaText(etaLevelH)
+    infoEl.textContent = `Lv ${unit.level} • Armory Power: ${F_Game(armoryPower)} • DPS Share: ${F_Percent(dpsShare * 100)} • ETA Lvl: ${etaText}`
+  }
+}
+
+const setupLevelUpButton = (node, unit, levelCost, canAfford, missingGold) => {
+  const btn = node.querySelector('button.level')
+  const missEl = node.querySelector('.actions .miss')
+  
+  if (btn) {
+    btn.dataset.id = unit.id
+    btn.disabled = !canAfford
+    btn.innerHTML = `Level Up <small>(${F_Game(levelCost)})</small>`
+  }
+  
+  if (missEl) {
+    missEl.textContent = canAfford ? '' : `Need ${F_Game(missingGold)}`
+  }
+}
+
+const setupUnitStats = (node, stats, unit) => {
+  const statsEl = node.querySelector('.stats')
+  if (!statsEl) return
+  
+  statsEl.innerHTML = `
+    <div><b>DPS</b>${F_Stats(stats.effDps)}</div>
+    <div><b>HP</b>${F_Stats(stats.hp)}</div>
+    <div><b>EHP</b>${F_Stats(stats.ehp)}</div>
+    <div><b>Crit</b>${F_Stats(Math.round(stats.crit * 100))}%</div>
+    <div><b>Armor</b>${F_Stats(stats.armor)}</div>
+    <div><b>Jewelry</b>${unit.jewelry.filter(Boolean).length}/3</div>`
+}
+
+const setupPowerBar = (node, unit) => {
+  const power = classPower[unit.role.toLowerCase()]()
+  const roleColor = getRoleColor(unit.role)
+  
+  const powerBar = document.createElement('div')
+  powerBar.className = 'power-bar'
+  powerBar.innerHTML = `
+    <div class="power-fill" style="width: ${power}%; background: ${roleColor}"></div>
+    <span class="power-text">${unit.role} Power: ${power}/${POWER_BAR_MAX}</span>
+  `
+  node.appendChild(powerBar)
+  
+  // Add role-colored border glow for high power characters
+  if (power >= HIGH_POWER_THRESHOLD) {
+    node.style.boxShadow = `0 0 10px ${roleColor}40`
+  }
+}
+
+const setupJewelryDisplay = (node, unit) => {
+  const jewelsEl = node.querySelector('.jewels')
+  if (!jewelsEl) return
+  
+  const jewelry = [
+    unit.jewelry[0] && S.inventory.jewelry[unit.jewelry[0]],
+    unit.jewelry[1] && S.inventory.jewelry[unit.jewelry[1]],
+    unit.jewelry[2] && S.inventory.jewelry[unit.jewelry[2]]
+  ]
+  
+  jewelsEl.innerHTML = jewelry
+    .map((j) => `<div>${formatJewel(j)}</div>`)
+    .join('')
+}
+
 export const renderParty = () => {
   const wrap = el('#partyList')
   if (!wrap) return
+  
   wrap.innerHTML = ''
-  const tmpl = el('#party-card')
-  const m = calcMetrics()
-  partyUnits().forEach((u) => {
-    const st = computeUnitStats(u)
-    const lvlCost = levelUpCost(u.level)
-    const can = S.gold >= lvlCost
-    const miss = Math.max(0, lvlCost - S.gold)
-    const share = m.dps > 0 ? computeUnitStats(u).effDps / m.dps : 0
-    const etaLevelH = m.gph > 0 ? miss / m.gph : Infinity
-    const node = tmpl.content.firstElementChild.cloneNode(true)
-    const iconEl = node.querySelector('.icon')
-    const roleColor = getRoleColor(u.role)
-    const roleIcon = getRoleIcon(u.role)
-    iconEl.innerHTML = roleIcon
-    
-    // Add subtle role-colored background to character card
-    node.style.background = `linear-gradient(180deg, var(--panel), var(--panel-2)), linear-gradient(135deg, ${roleColor}10 0%, transparent 50%)`
-    node.querySelector('.name').innerHTML =
-      `<b>${u.name}</b> <span class="role ${u.role}">${u.role}</span> <span class="stars">${'★'.repeat(u.stars)}</span><span class="tiny"> Prestige ${u.prestige} • Transcend ${u.transcend}</span>`
-    node.querySelector('.info').textContent =
-      `Lv ${u.level} • Armory Power: ${F_Game(Math.floor(u.bestWeapon + u.bestArmor))} • DPS Share: ${F_Percent(share * 100)} • ETA Lvl: ${etaLevelH === Infinity ? '—' : F_Game(etaLevelH) + 'h'}`
-    const btn = node.querySelector('button.level')
-    btn.dataset.id = u.id
-    btn.disabled = !can
-    btn.innerHTML = `Level Up <small>(${F_Game(lvlCost)})</small>`
-    const missEl = node.querySelector('.actions .miss')
-    missEl.textContent = can ? '' : `Need ${F_Game(miss)}`
-    const statsEl = node.querySelector('.stats')
-    statsEl.innerHTML = `
-                  <div><b>DPS</b>${F_Stats(st.effDps)}</div>
-        <div><b>HP</b>${F_Stats(st.hp)}</div>
-        <div><b>EHP</b>${F_Stats(st.ehp)}</div>
-        <div><b>Crit</b>${F_Stats(Math.round(st.crit * 100))}%</div>
-        <div><b>Armor</b>${F_Stats(st.armor)}</div>
-      <div><b>Jewelry</b>${u.jewelry.filter(Boolean).length}/3</div>`
-    
-    // Add power bar for class currency
-    const power = classPower[u.role.toLowerCase()]()
-    const powerBar = document.createElement('div')
-    powerBar.className = 'power-bar'
-    powerBar.innerHTML = `
-      <div class="power-fill" style="width: ${power}%; background: ${roleColor}"></div>
-      <span class="power-text">${u.role} Power: ${power}/100</span>
-    `
-    node.appendChild(powerBar)
-    
-    // Add role-colored border glow for high power characters
-    if (power >= 80) {
-      node.style.boxShadow = `0 0 10px ${roleColor}40`
+  const metrics = calcMetrics()
+  
+  partyUnits().forEach((unit) => {
+    const card = createUnitCard(unit, metrics)
+    if (card) {
+      wrap.appendChild(card)
     }
-    const j0 = u.jewelry[0] && S.inventory.jewelry[u.jewelry[0]]
-    const j1 = u.jewelry[1] && S.inventory.jewelry[u.jewelry[1]]
-    const j2 = u.jewelry[2] && S.inventory.jewelry[u.jewelry[2]]
-    node.querySelector('.jewels').innerHTML = [j0, j1, j2]
-      .map((j) => `<div>${formatJewel(j)}</div>`)
-      .join('')
-    wrap.appendChild(node)
   })
+  
   wrap.querySelectorAll('button.level').forEach((b) => b.addEventListener('click', onLevelUp))
+}
+
+// ===== UPGRADE RENDERING HELPERS =====
+
+const UPGRADE_DEFINITIONS = [
+  { key: 'dps', name: 'Global DPS %', desc: '+5% party DPS per level' },
+  { key: 'gold', name: 'Global Gold %', desc: '+7% gold per level' },
+  { key: 'crit', name: 'Global Crit', desc: '+1% crit chance per level (capped)' },
+]
+
+// ===== UTILITY FUNCTIONS =====
+
+const validateNumber = (value, name, min = 0) => {
+  if (typeof value !== 'number' || value < min) {
+    console.warn(`Invalid ${name}:`, value)
+    return false
+  }
+  return true
+}
+
+const validateString = (value, name) => {
+  if (!value || typeof value !== 'string') {
+    console.warn(`Invalid ${name}:`, value)
+    return false
+  }
+  return true
+}
+
+const validateElement = (element, name) => {
+  if (!element) {
+    console.warn(`${name} element not found`)
+    return false
+  }
+  return true
+}
+
+const safeExecute = (fn, context, ...args) => {
+  try {
+    return fn.apply(context, args)
+  } catch (error) {
+    console.error(`Error executing ${fn.name || 'function'}:`, error)
+    return null
+  }
+}
+
+// ===== BUSINESS LOGIC HELPERS =====
+
+const calculateUpgradeCost = (key, level) => {
+  if (!validateString(key, 'upgrade key')) return 0
+  if (!validateNumber(level, 'upgrade level')) return 0
+  if (!UPGRADE_BASE_COSTS[key]) {
+    console.warn(`Unknown upgrade key: ${key}`)
+    return 0
+  }
+  return (UPGRADE_BASE_COSTS[key] * Math.pow(UPGRADE_SCALING_FACTOR, level)) | 0
+}
+
+const calculateMissingGold = (cost) => {
+  if (!validateNumber(cost, 'cost')) return 0
+  return Math.max(0, cost - S.gold)
+}
+
+const canAffordUpgrade = (cost) => {
+  if (!validateNumber(cost, 'cost')) return false
+  return S.gold >= cost
+}
+
+const calculateDpsShare = (unitDps, totalDps) => {
+  if (!validateNumber(unitDps, 'unit DPS')) return 0
+  if (!validateNumber(totalDps, 'total DPS')) return 0
+  return totalDps > 0 ? unitDps / totalDps : 0
+}
+
+const calculateEtaLevel = (missingGold, goldPerHour) => {
+  if (!validateNumber(missingGold, 'missing gold')) return Infinity
+  if (!validateNumber(goldPerHour, 'gold per hour')) return Infinity
+  return goldPerHour > 0 ? missingGold / goldPerHour : Infinity
+}
+
+const formatEtaText = (etaHours) => {
+  if (typeof etaHours !== 'number') {
+    console.warn('Invalid ETA hours:', etaHours)
+    return '—'
+  }
+  return etaHours === Infinity ? '—' : F_Game(etaHours) + 'h'
+}
+
+const createUpgradeRow = (upgradeDef) => {
+  const tmpl = el('#upgrade-row')
+  if (!tmpl) return null
+  
+  const node = tmpl.content.firstElementChild.cloneNode(true)
+  const level = S.upgrades[upgradeDef.key]
+  const cost = calculateUpgradeCost(upgradeDef.key, level)
+  const canAfford = canAffordUpgrade(cost)
+  const missingGold = calculateMissingGold(cost)
+  
+  setupUpgradeInfo(node, upgradeDef, level)
+  setupUpgradeButton(node, upgradeDef.key, cost, canAfford, missingGold)
+  
+  return node
+}
+
+const setupUpgradeInfo = (node, upgradeDef, level) => {
+  const infoEl = node.querySelector('.info')
+  if (!infoEl) return
+  
+  infoEl.innerHTML = `<b class="truncate">${upgradeDef.name}</b> <span class="tiny">Lv ${level}</span><div class="tiny clamp2">${upgradeDef.desc}</div>`
+}
+
+const setupUpgradeButton = (node, upgradeKey, cost, canAfford, missingGold) => {
+  const btn = node.querySelector('button.buy')
+  const missEl = node.querySelector('.actions .miss')
+  
+  if (btn) {
+    btn.dataset.upg = upgradeKey
+    btn.disabled = !canAfford
+    btn.innerHTML = `Buy <small>(${F_Game(cost)})</small>`
+  }
+  
+  if (missEl) {
+    missEl.textContent = canAfford ? '' : `Need ${F_Game(missingGold)}`
+  }
 }
 
 export const renderUpgrades = () => {
   const wrap = el('#upgrades')
   if (!wrap) return
+  
   wrap.innerHTML = ''
-  const tmpl = el('#upgrade-row')
-  const defs = [
-    { key: 'dps', name: 'Global DPS %', desc: '+5% party DPS per level' },
-    { key: 'gold', name: 'Global Gold %', desc: '+7% gold per level' },
-    { key: 'crit', name: 'Global Crit', desc: '+1% crit chance per level (capped)' },
-  ]
-  const upgradeCost = (key, lvl) =>
-    (({ dps: 100, gold: 120, crit: 150 })[key] * Math.pow(1.35, lvl)) | 0
-  defs.forEach((d) => {
-    const lvl = S.upgrades[d.key]
-    const cost = upgradeCost(d.key, lvl)
-    const can = S.gold >= cost
-    const miss = Math.max(0, cost - S.gold)
-    const node = tmpl.content.firstElementChild.cloneNode(true)
-    node.querySelector('.info').innerHTML =
-      `<b class="truncate">${d.name}</b> <span class="tiny">Lv ${lvl}</span><div class="tiny clamp2">${d.desc}</div>`
-    const btn = node.querySelector('button.buy')
-    btn.dataset.upg = d.key
-    btn.disabled = !can
-    btn.innerHTML = `Buy <small>(${F_Game(cost)})</small>`
-    node.querySelector('.actions .miss').textContent = can ? '' : `Need ${F_Game(miss)}`
-    wrap.appendChild(node)
+  
+  UPGRADE_DEFINITIONS.forEach((upgradeDef) => {
+    const row = createUpgradeRow(upgradeDef)
+    if (row) {
+      wrap.appendChild(row)
+    }
   })
+  
   wrap.querySelectorAll('button.buy').forEach((b) => b.addEventListener('click', onBuyUpgrade))
 }
 
@@ -454,29 +665,56 @@ export const renderLog = () => {
 
 document.addEventListener('log', renderLog)
 
-export const onLevelUp = (e) => {
-  const id = e.currentTarget.getAttribute('data-id')
-  const u = S.roster[id]
-  const cost = levelUpCost(u.level)
+const handleLevelUp = (id) => {
+  if (!validateString(id, 'unit ID')) return
+  
+  const unit = S.roster[id]
+  if (!unit) {
+    console.error(`Unit not found with ID: ${id}`)
+    return
+  }
+  
+  const cost = levelUpCost(unit.level)
   if (S.gold >= cost) {
     S.gold -= cost
-    u.level += 1
+    unit.level += 1
     autoManageJewelry()
     save()
     render()
+  } else {
+    console.warn(`Insufficient gold for level up. Need: ${cost}, Have: ${S.gold}`)
   }
 }
 
-export const onBuyUpgrade = (e) => {
-  const key = e.currentTarget.getAttribute('data-upg')
-  const lvl = S.upgrades[key]
-  const cost = ({ dps: 100, gold: 120, crit: 150 }[key] * Math.pow(1.35, lvl)) | 0
+export const onLevelUp = (e) => {
+  const id = e.currentTarget.getAttribute('data-id')
+  safeExecute(handleLevelUp, null, id)
+}
+
+const handleBuyUpgrade = (key) => {
+  if (!validateString(key, 'upgrade key')) return
+  
+  if (!S.upgrades.hasOwnProperty(key)) {
+    console.error(`Invalid upgrade key: ${key}`)
+    return
+  }
+  
+  const level = S.upgrades[key]
+  const cost = calculateUpgradeCost(key, level)
+  
   if (S.gold >= cost) {
     S.gold -= cost
     S.upgrades[key] += 1
     save()
     render()
+  } else {
+    console.warn(`Insufficient gold for upgrade. Need: ${cost}, Have: ${S.gold}`)
   }
+}
+
+export const onBuyUpgrade = (e) => {
+  const key = e.currentTarget.getAttribute('data-upg')
+  safeExecute(handleBuyUpgrade, null, key)
 }
 
 export const renderGachaResult = (txt) => {
@@ -534,10 +772,10 @@ export const bindTopBar = () => {
 function bindMarket() {
   const bBuyDia = el('#buyDia'), bSellDia = el('#sellDia'), amtDia = el('#buyDiaAmt')
   const bBuyEte = el('#buyEte'), bSellEte = el('#sellEte'), amtEte = el('#buyEteAmt')
-  if (bBuyDia) bBuyDia.onclick = () => { buyCurrency('dia', Math.max(1, Number(amtDia.value||1)|0)); render(); save() }
-  if (bSellDia) bSellDia.onclick = () => { sellCurrency('dia', Math.max(1, Number(amtDia.value||1)|0)); render(); save() }
-  if (bBuyEte) bBuyEte.onclick = () => { buyCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
-  if (bSellEte) bSellEte.onclick = () => { sellCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
+  if (bBuyDia) bBuyDia.onclick = () => { buyCurrency('dia', Math.max(MIN_TRADE_AMOUNT, Number(amtDia.value||1)|0)); render(); save() }
+  if (bSellDia) bSellDia.onclick = () => { sellCurrency('dia', Math.max(MIN_TRADE_AMOUNT, Number(amtDia.value||1)|0)); render(); save() }
+  if (bBuyEte) bBuyEte.onclick = () => { buyCurrency('ete', Math.max(MIN_TRADE_AMOUNT, Number(amtEte.value||1)|0)); render(); save() }
+  if (bSellEte) bSellEte.onclick = () => { sellCurrency('ete', Math.max(MIN_TRADE_AMOUNT, Number(amtEte.value||1)|0)); render(); save() }
   
   // New currency trading bindings
   const tradeBtn = el('#tradeBtn')
@@ -549,7 +787,7 @@ function bindMarket() {
     tradeBtn.onclick = () => {
       const from = fromCurrency.value
       const to = toCurrency.value
-      const amount = Math.max(1, Number(tradeAmount.value || 1) | 0)
+      const amount = Math.max(MIN_TRADE_AMOUNT, Number(tradeAmount.value || 1) | 0)
       if (tradeCurrency(from, to, amount)) {
         render()
         save()
@@ -561,7 +799,7 @@ function bindMarket() {
 export const runDev = (cmd) => {
   if (!cmd) {
     // If no command entered, use the placeholder text
-    cmd = "tickets 50 | gold 1e6 | win | dia 10 | ete 1 | ste 5 | neb 5 | vor 5 | jewelry"
+    cmd = DEFAULT_DEV_COMMAND
   }
   
   // Split by pipe to handle multiple commands
@@ -635,7 +873,7 @@ export const refreshAffordability = () => {
     if (missEl) missEl.textContent = can ? '' : `Need ${F_Game(miss)}`
   })
   // Upgrade purchase buttons
-  const upgradeCost = (key, lvl) => (({ dps: 100, gold: 120, crit: 150 })[key] * Math.pow(1.35, lvl)) | 0
+  const upgradeCost = (key, lvl) => (UPGRADE_BASE_COSTS[key] * Math.pow(UPGRADE_SCALING_FACTOR, lvl)) | 0
   document.querySelectorAll('button.buy').forEach((btn) => {
     const key = btn.getAttribute('data-upg')
     if (!key) return
@@ -653,3 +891,4 @@ export const refreshAffordability = () => {
 // Update button affordances when gold or tickets change without full re-render
 document.addEventListener('gold-change', refreshAffordability)
 document.addEventListener('tickets-change', refreshAffordability)
+

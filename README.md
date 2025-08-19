@@ -1,4 +1,67 @@
-# Animal Gacha - AFK RPG
+# Animal Gacha Game
+
+A browser-based idle game featuring character collection, combat, and progression mechanics.
+
+## Recent Code Cleanup (UI Module)
+
+The `scripts/ui.js` file has been refactored following clean code principles:
+
+### 1. Extracted Constants
+- Moved magic numbers to named constants (e.g., `CHART_WIDTH`, `UPGRADE_BASE_COSTS`)
+- Centralized configuration values for better maintainability
+- Added semantic constant names for improved readability
+
+### 2. Split Large Functions
+- Broke down `renderParty()` into focused helper functions:
+  - `createUnitCard()` - Main card creation logic
+  - `setupUnitIcon()` - Icon rendering
+  - `setupUnitStyling()` - Visual styling
+  - `setupUnitInfo()` - Information display
+  - `setupLevelUpButton()` - Button configuration
+  - `setupUnitStats()` - Stats display
+  - `setupPowerBar()` - Power bar rendering
+  - `setupJewelryDisplay()` - Jewelry display
+- Broke down `renderUpgrades()` into smaller functions:
+  - `createUpgradeRow()` - Row creation
+  - `setupUpgradeInfo()` - Information display
+  - `setupUpgradeButton()` - Button configuration
+
+### 3. Separated Concerns
+- Extracted business logic from UI functions
+- Created dedicated business logic helpers:
+  - `calculateUpgradeCost()` - Cost calculation
+  - `calculateMissingGold()` - Gold deficit calculation
+  - `canAffordUpgrade()` - Affordability check
+  - `calculateDpsShare()` - DPS contribution calculation
+  - `calculateEtaLevel()` - Time estimation
+  - `formatEtaText()` - Text formatting
+
+### 4. Added Input Validation
+- Comprehensive parameter validation for all functions
+- Type checking and range validation
+- Meaningful error messages for debugging
+- Graceful handling of invalid inputs
+
+### 5. Improved Error Handling
+- Consistent try-catch patterns
+- Detailed error logging
+- Graceful degradation on failures
+- User-friendly error messages
+
+### 6. Extracted Utility Functions
+- `validateNumber()` - Number validation utility
+- `validateString()` - String validation utility
+- `validateElement()` - DOM element validation
+- `safeExecute()` - Safe function execution wrapper
+
+### Benefits
+- **Maintainability**: Easier to modify and extend functionality
+- **Readability**: Clear function names and separation of concerns
+- **Reliability**: Robust error handling and input validation
+- **Reusability**: Utility functions can be used across the codebase
+- **Debugging**: Better error messages and logging
+
+## Game Features
 
 A browser-based idle RPG with gacha mechanics, prestige systems, and complex progression math.
 
