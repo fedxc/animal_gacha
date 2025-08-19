@@ -726,15 +726,11 @@ export function tradeCurrency(from, to, amount) {
     return false
   }
   
-  // Check if target currency would exceed 100 limit
-  if (S.meta[toProp] + amount > 100) {
-    logMsg(`❌ Would exceed 100 ${to.toUpperCase()} limit`)
-    return false
-  }
+
   
   // Execute the trade
   S.meta[fromProp] = Math.max(0, S.meta[fromProp] - cost)
-  S.meta[toProp] = Math.min(100, S.meta[toProp] + amount)
+  S.meta[toProp] = S.meta[toProp] + amount
   
   console.log(`Trade successful! New balances:`, S.meta)
   
@@ -839,7 +835,8 @@ export const prestigeReset = () => {
   Object.values(S.roster).forEach((u) => {
     u.prestige += 1
     u.level = 1
-    u.stars = 1
+    // Preserve stars - they are hard to get!
+    // u.stars = 1
     u.bestWeapon = 0
     u.bestArmor = 0
     u.jewelry = [null, null, null]
@@ -863,7 +860,8 @@ export const transcendReset = () => {
     u.transcend += 1
     u.prestige = 0
     u.level = 1
-    u.stars = 1
+    // Preserve stars - they are hard to get!
+    // u.stars = 1
     u.bestWeapon = 0
     u.bestArmor = 0
     u.jewelry = [null, null, null]
@@ -879,9 +877,9 @@ export const transcendReset = () => {
 
 // Calculate class power based on currency amounts
 export const classPower = {
-  tank: () => Math.min(100, S.meta.stellarium),
-  mage: () => Math.min(100, S.meta.nebulium), 
-  fighter: () => Math.min(100, S.meta.vortexium)
+  tank: () => S.meta.stellarium,
+  mage: () => S.meta.nebulium, 
+  fighter: () => S.meta.vortexium
 }
 
 // Apply power bonuses to units
