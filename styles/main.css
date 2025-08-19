@@ -446,3 +446,134 @@ select {
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
   white-space: nowrap;
 }
+
+/* Dashboard Groups */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1200px) {
+  .dashboard-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-group {
+  background: linear-gradient(180deg, #0e1420, #0b0f16);
+  border: 2px solid #ffffff16;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 #ffffff10;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-group:hover {
+  border-color: #ffffff24;
+  box-shadow: inset 0 1px 0 #ffffff10, 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.group-header {
+  background: linear-gradient(90deg, #1a2233, #141822);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #ffffff12;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.group-content {
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.group-content > div {
+  background: #0b0f16;
+  border: 1px solid #ffffff0a;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+
+.group-content b {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* Group-specific color accents */
+.combat-stats {
+  border-color: #ef444420;
+}
+
+.combat-stats .group-header {
+  background: linear-gradient(90deg, #3a1b1b, #241414);
+  border-bottom-color: #ef444430;
+}
+
+.economy-stats {
+  border-color: #f59e0b20;
+}
+
+.economy-stats .group-header {
+  background: linear-gradient(90deg, #3a2b1b, #241a14);
+  border-bottom-color: #f59e0b30;
+}
+
+.loot-stats {
+  border-color: #8b5cf620;
+}
+
+.loot-stats .group-header {
+  background: linear-gradient(90deg, #2b1b3a, #1a1424);
+  border-bottom-color: #8b5cf630;
+}
+
+.progression-stats {
+  border-color: #34d39920;
+}
+
+.progression-stats .group-header {
+  background: linear-gradient(90deg, #1b3a1b, #142414);
+  border-bottom-color: #34d39930;
+}
+
+.market-stats {
+  border-color: #7dd3fc20;
+}
+
+.market-stats .group-header {
+  background: linear-gradient(90deg, #1b2b3a, #141a24);
+  border-bottom-color: #7dd3fc30;
+}
+
+.defense-stats {
+  border-color: #3b82f620;
+}
+
+.defense-stats .group-header {
+  background: linear-gradient(90deg, #1b1b3a, #141424);
+  border-bottom-color: #3b82f630;
+}

@@ -100,6 +100,11 @@ export const load = () => {
   if (!S.meta.nebulium) S.meta.nebulium = 0
   if (!S.meta.vortexium) S.meta.vortexium = 0
   if (!S.market) S.market = { t: 0, dia: { price: 5000, hist: [] }, ete: { price: 20000, hist: [] }, ste: { price: 1, hist: [] }, neb: { price: 1, hist: [] }, vor: { price: 1, hist: [] } }
+  if (!S.marketState) S.marketState = {
+    ste: { trend: 0, trendStrength: 0, crashTimer: 0, lastCrash: 0 },
+    neb: { trend: 0, trendStrength: 0, crashTimer: 0, lastCrash: 0 },
+    vor: { trend: 0, trendStrength: 0, crashTimer: 0, lastCrash: 0 }
+  }
   const idMap = { gravortoise: 'terraclaw', nebuline: 'nebulynx', razorloom: 'vortexhorn' }
   S.active = S.active.map((id) => idMap[id] || id)
   Object.keys(idMap).forEach((oldId) => {

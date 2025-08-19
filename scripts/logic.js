@@ -1,8 +1,8 @@
 /*
  * Core game mechanics: stats, combat, loot and progression.
  */
-import { clamp, chance, pick, rnd, F, F_Game, F_Price, F_Stats } from './utils.js?v=20250820_1'
-import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js'
+import { clamp, chance, pick, rnd, F, F_Game, F_Price, F_Stats } from './utils.js?v=20250820_2'
+import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js?v=20250820_2'
 
 // ===== Units & Stats =====
 // Global gold multiplier to increase gold rate everywhere
@@ -459,6 +459,8 @@ function noise(t) {
   )
 }
 
+
+
 export function updateMarket(dt) {
   if (!S.market) return
   S.market.t += dt
@@ -466,30 +468,97 @@ export function updateMarket(dt) {
   // All class currencies start at 1 DIA and diverge over time
   const basePrice = 1.0
   
-  // Different cyclical patterns for each currency
-  const cycles = {
-    ste: { freq: 0.0008, phase: 0, amplitude: 0.4 },     // Medium frequency, medium amplitude
-    neb: { freq: 0.0012, phase: 100, amplitude: 0.6 },   // Higher frequency, larger amplitude
-    vor: { freq: 0.0010, phase: 200, amplitude: 0.5 }    // Medium frequency, medium amplitude
+  // Market configuration for each currency
+  const marketConfig = {
+    ste: { 
+      freq: 0.0003,        // Slower base frequency for longer trends
+      phase: 0, 
+      amplitude: 0.8,      // Larger amplitude for more dramatic swings
+      trendChangeFreq: 0.0001,  // How often trends change
+      crashChance: 0.0002,      // Chance of crash per tick
+      crashDuration: 50,        // How long crashes last
+      recoveryTime: 200         // Time to recover from crash
+    },
+    neb: { 
+      freq: 0.0004, 
+      phase: 100, 
+      amplitude: 1.0,      // Most volatile
+      trendChangeFreq: 0.00015,
+      crashChance: 0.00025,
+      crashDuration: 60,
+      recoveryTime: 250
+    },
+    vor: { 
+      freq: 0.00035, 
+      phase: 200, 
+      amplitude: 0.9,
+      trendChangeFreq: 0.00012,
+      crashChance: 0.00022,
+      crashDuration: 55,
+      recoveryTime: 220
+    }
   }
   
-  Object.entries(cycles).forEach(([currency, config]) => {
+  Object.entries(marketConfig).forEach(([currency, config]) => {
     const m = S.market[currency]
+    const state = S.marketState[currency]
     const time = S.market.t + config.phase
     
-    // Create more complex price movement with multiple sine waves
+    // Update trend changes
+    if (Math.random() < config.trendChangeFreq * dt) {
+      state.trend = (Math.random() - 0.5) * 2  // -1 to 1
+      state.trendStrength = 0.3 + Math.random() * 0.7  // 0.3 to 1.0
+    }
+    
+    // Update crash timer
+    if (state.crashTimer > 0) {
+      state.crashTimer -= dt
+    }
+    
+    // Check for new crashes
+    if (state.crashTimer <= 0 && Math.random() < config.crashChance * dt) {
+      state.crashTimer = config.crashDuration
+      state.lastCrash = S.market.t
+      const crashMessages = [
+        `💥 ${currency.toUpperCase()} market CRASH! Panic selling!`,
+        `💥 ${currency.toUpperCase()} market MELTDOWN! Prices plummeting!`,
+        `💥 ${currency.toUpperCase()} market DISASTER! Investors fleeing!`,
+        `💥 ${currency.toUpperCase()} market COLLAPSE! Everything is red!`,
+        `💥 ${currency.toUpperCase()} market APOCALYPSE! The end is near!`
+      ]
+      logMsg(pick(crashMessages))
+    }
+    
+    // Calculate base cyclical movement
     const cycle1 = Math.sin(time * config.freq) * 0.5 + 0.5
-    const cycle2 = Math.sin(time * config.freq * 0.3) * 0.3 + 0.5  // Longer term trend
-    const cycle3 = Math.sin(time * config.freq * 2.1) * 0.2 + 0.5  // Shorter term oscillation
+    const cycle2 = Math.sin(time * config.freq * 0.2) * 0.4 + 0.5  // Very long term trend
+    const cycle3 = Math.sin(time * config.freq * 1.8) * 0.3 + 0.5  // Medium term oscillation
     
     const combinedCycle = (cycle1 + cycle2 + cycle3) / 3
-    const noise = (Math.random() - 0.5) * 0.15 // ±7.5% random noise
     
-    // Calculate price variation around base price
-    const variation = (combinedCycle + noise - 0.5) * config.amplitude
+    // Apply trend bias
+    const trendBias = state.trend * state.trendStrength * 0.4
+    
+    // Calculate crash effect
+    let crashEffect = 0
+    if (state.crashTimer > 0) {
+      // During crash: prices plummet
+      const crashProgress = 1 - (state.crashTimer / config.crashDuration)
+      crashEffect = -0.7 * (1 - crashProgress)  // Up to -70% during crash
+    } else if (S.market.t - state.lastCrash < config.recoveryTime) {
+      // Recovery period: gradual bounce back
+      const recoveryProgress = (S.market.t - state.lastCrash) / config.recoveryTime
+      crashEffect = -0.3 * (1 - recoveryProgress)  // Gradually recover from -30%
+    }
+    
+    // Add some random noise
+    const noise = (Math.random() - 0.5) * 0.1 // ±5% random noise
+    
+    // Combine all effects
+    const variation = (combinedCycle + trendBias + crashEffect + noise - 0.5) * config.amplitude
     const price = basePrice * (1 + variation)
     
-    m.price = Math.max(0.1, Math.min(5.0, price))
+    m.price = Math.max(0.05, Math.min(8.0, price))  // Wider price range
     
     m.hist.push(m.price)
     if (m.hist.length > 200) m.hist.shift()

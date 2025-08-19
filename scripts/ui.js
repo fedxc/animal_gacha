@@ -1,8 +1,8 @@
 /*
  * Rendering and DOM interaction.
  */
-import { F, F_Game, F_Price, F_Stats, F_Dashboard, F_Percent, el } from './utils.js?v=20250820_1'
-import { S, save, resetAll, partyUnits, ENEMY_TYPES } from './state.js'
+import { F, F_Game, F_Price, F_Stats, F_Dashboard, F_Percent, el } from './utils.js?v=20250820_2'
+import { S, save, resetAll, partyUnits, ENEMY_TYPES } from './state.js?v=20250820_2'
 import {
   computeUnitStats,
   levelUpCost,
@@ -24,7 +24,7 @@ import {
   sellCurrency,
   tradeCurrency,
   classPower,
-} from './logic.js?v=20250820_1'
+} from './logic.js?v=20250820_2'
 
 // ===== CONSTANTS =====
 
@@ -189,11 +189,65 @@ export const renderTop = () => {
   const m = calcMetrics()
   if (nGph) nGph.textContent = F_Game(m.gph)
   if (nTph) nTph.textContent = F_Game(m.tph)
-  // Market top balances
+  // Market top balances with trend indicators
   const pSte = el('#priceSte'), pNeb = el('#priceNeb'), pVor = el('#priceVor')
-      if (pSte && S.market) pSte.textContent = F_Price(S.market.ste.price)
-    if (pNeb && S.market) pNeb.textContent = F_Price(S.market.neb.price)
-    if (pVor && S.market) pVor.textContent = F_Price(S.market.vor.price)
+  if (pSte && S.market) {
+    const price = F_Price(S.market.ste.price)
+    const state = S.marketState?.ste
+    let indicator = ''
+    if (state) {
+      if (state.crashTimer > 0) {
+        indicator = ' 💥' // Crash
+      } else if (state.trend > 0.3) {
+        indicator = ' 📈' // Strong uptrend
+      } else if (state.trend > 0.1) {
+        indicator = ' ↗️' // Weak uptrend
+      } else if (state.trend < -0.3) {
+        indicator = ' 📉' // Strong downtrend
+      } else if (state.trend < -0.1) {
+        indicator = ' ↘️' // Weak downtrend
+      }
+    }
+    pSte.textContent = price + indicator
+  }
+  if (pNeb && S.market) {
+    const price = F_Price(S.market.neb.price)
+    const state = S.marketState?.neb
+    let indicator = ''
+    if (state) {
+      if (state.crashTimer > 0) {
+        indicator = ' 💥' // Crash
+      } else if (state.trend > 0.3) {
+        indicator = ' 📈' // Strong uptrend
+      } else if (state.trend > 0.1) {
+        indicator = ' ↗️' // Weak uptrend
+      } else if (state.trend < -0.3) {
+        indicator = ' 📉' // Strong downtrend
+      } else if (state.trend < -0.1) {
+        indicator = ' ↘️' // Weak downtrend
+      }
+    }
+    pNeb.textContent = price + indicator
+  }
+  if (pVor && S.market) {
+    const price = F_Price(S.market.vor.price)
+    const state = S.marketState?.vor
+    let indicator = ''
+    if (state) {
+      if (state.crashTimer > 0) {
+        indicator = ' 💥' // Crash
+      } else if (state.trend > 0.3) {
+        indicator = ' 📈' // Strong uptrend
+      } else if (state.trend > 0.1) {
+        indicator = ' ↗️' // Weak uptrend
+      } else if (state.trend < -0.3) {
+        indicator = ' 📉' // Strong downtrend
+      } else if (state.trend < -0.1) {
+        indicator = ' ↘️' // Weak downtrend
+      }
+    }
+    pVor.textContent = price + indicator
+  }
   
   // Class currency display
   const nSte = el('#stellarium'), nNeb = el('#nebulium'), nVor = el('#vortexium')
@@ -237,25 +291,75 @@ export const renderDashboard = () => {
   const m = calcMetrics()
   const grid = el('#dashGrid')
   if (!grid) return
-  grid.innerHTML = [
-    `<div><b>DPS</b>${F_Dashboard(m.dps)}</div>`,
-    `<div><b>Kills/min</b>${F_Dashboard(m.kpm)}</div>`,
-    `<div><b>TTK</b>${F_Dashboard(m.ttk)}s</div>`,
-    `<div><b>Gold/kill</b>${F_Dashboard(m.goldPerKill)}</div>`,
-    `<div><b>Gold/hr</b>${F_Dashboard(m.gph)}</div>`,
-    `<div><b>Tickets/hr</b>${F_Dashboard(m.tph)}</div>`,
-    `<div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>`,
-    `<div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>`,
-    `<div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>`,
-    `<div><b>Diamantium/hr</b>${F_Dashboard(m.diah)}</div>`,
-    `<div><b>Eternium/hr</b>${F_Dashboard(m.eteh)}</div>`,
-    `<div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : F_Game(m.etaDiaH) + 'h'}</div>`,
-    `<div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : F_Game(m.etaEteH) + 'h'}</div>`,
-    // Party balance diagnostics
-          `<div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>`,
-      `<div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>`,
-      `<div><b>Guard</b>${F_Dashboard(m.guard)}</div>`,
-  ].join('')
+  
+  // Market trend information
+  const getMarketTrend = (currency) => {
+    const state = S.marketState?.[currency]
+    if (!state) return '—'
+    if (state.crashTimer > 0) return '💥 CRASH'
+    if (state.trend > 0.3) return '📈 STRONG UP'
+    if (state.trend > 0.1) return '↗️ UP'
+    if (state.trend < -0.3) return '📉 STRONG DOWN'
+    if (state.trend < -0.1) return '↘️ DOWN'
+    return '➡️ FLAT'
+  }
+  
+  grid.innerHTML = `
+    <div class="dashboard-group combat-stats">
+      <div class="group-header">⚔️ Combat Performance</div>
+      <div class="group-content">
+        <div><b>DPS</b>${F_Dashboard(m.dps)}</div>
+        <div><b>Kills/min</b>${F_Dashboard(m.kpm)}</div>
+        <div><b>TTK</b>${F_Dashboard(m.ttk)}s</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-group economy-stats">
+      <div class="group-header">💰 Economy & Resources</div>
+      <div class="group-content">
+        <div><b>Gold/kill</b>${F_Dashboard(m.goldPerKill)}</div>
+        <div><b>Gold/hr</b>${F_Dashboard(m.gph)}</div>
+        <div><b>Tickets/hr</b>${F_Dashboard(m.tph)}</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-group loot-stats">
+      <div class="group-header">🎁 Loot Generation</div>
+      <div class="group-content">
+        <div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>
+        <div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>
+        <div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-group progression-stats">
+      <div class="group-header">⭐ Progression & Prestige</div>
+      <div class="group-content">
+        <div><b>Diamantium/hr</b>${F_Dashboard(m.diah)}</div>
+        <div><b>Eternium/hr</b>${F_Dashboard(m.eteh)}</div>
+        <div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : F_Game(m.etaDiaH) + 'h'}</div>
+        <div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : F_Game(m.etaEteH) + 'h'}</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-group market-stats">
+      <div class="group-header">📊 Market Trends</div>
+      <div class="group-content">
+        <div><b>STE Trend</b>${getMarketTrend('ste')}</div>
+        <div><b>NEB Trend</b>${getMarketTrend('neb')}</div>
+        <div><b>VOR Trend</b>${getMarketTrend('vor')}</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-group defense-stats">
+      <div class="group-header">🛡️ Defense & Survival</div>
+      <div class="group-content">
+        <div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>
+        <div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>
+        <div><b>Guard</b>${F_Dashboard(m.guard)}</div>
+      </div>
+    </div>
+  `
 }
 
 function drawSpark(id, arr) {
