@@ -51,7 +51,8 @@ small {
 .topbar {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.5rem;
+  grid-template-rows: auto auto;
+  gap: 0.5rem 1rem;
   align-items: center;
   position: sticky;
   top: 0;
@@ -60,6 +61,20 @@ small {
   padding: 0.35rem 0.5rem;
   border-radius: 10px;
   border: 1px solid #ffffff10;
+}
+.topbar .stats {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+}
+.topbar .actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+.topbar .version {
+  grid-column: 1 / -1;
+  text-align: right;
 }
 .stat-pill {
   display: flex;
@@ -71,15 +86,14 @@ small {
   border-radius: 999px;
   box-shadow: 0 1px 0 #ffffff10 inset;
   white-space: nowrap;
+  flex: 0 0 140px;
+  justify-content: space-between;
 }
 .stat-pill strong {
   font-size: 14px;
-}
-.pill-row {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  align-items: center;
+  display: inline-block;
+  width: 60px;
+  text-align: right;
 }
 .btn {
   border: 1px solid #ffffff1a;
@@ -106,15 +120,12 @@ small {
   background: linear-gradient(180deg, #3a1b1b, #241414);
   border-color: #ffffff14;
 }
-.grid {
+.layout {
   display: grid;
+  grid-template-columns: 300px 1fr 300px;
   gap: var(--grid-gap);
-}
-.cols-3 {
-  grid-template-columns: minmax(260px, 2fr) minmax(420px, 3fr) minmax(260px, 2fr);
-}
-.cols-2 {
-  grid-template-columns: repeat(2, 1fr);
+  margin-top: 0.6rem;
+  align-items: start;
 }
 .col-stack {
   display: grid;
