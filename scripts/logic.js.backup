@@ -463,33 +463,22 @@ export function updateMarket(dt) {
   if (!S.market) return
   S.market.t += dt
   
-  // All class currencies start at 1 DIA and diverge over time
-  const basePrice = 1.0
-  
-  // Different cyclical patterns for each currency
+  // Cyclical patterns with different frequencies for class currencies
   const cycles = {
-    ste: { freq: 0.0008, phase: 0, amplitude: 0.4 },     // Medium frequency, medium amplitude
-    neb: { freq: 0.0012, phase: 100, amplitude: 0.6 },   // Higher frequency, larger amplitude
-    vor: { freq: 0.0010, phase: 200, amplitude: 0.5 }    // Medium frequency, medium amplitude
+    ste: { freq: 0.001, phase: 0 },
+    neb: { freq: 0.0015, phase: 100 },
+    vor: { freq: 0.002, phase: 200 }
   }
   
   Object.entries(cycles).forEach(([currency, config]) => {
     const m = S.market[currency]
     const time = S.market.t + config.phase
+    const cycle = Math.sin(time * config.freq) * 0.5 + 0.5 // 0-1 range
+    const noise = (Math.random() - 0.5) * 0.2 // ±10% random noise
     
-    // Create more complex price movement with multiple sine waves
-    const cycle1 = Math.sin(time * config.freq) * 0.5 + 0.5
-    const cycle2 = Math.sin(time * config.freq * 0.3) * 0.3 + 0.5  // Longer term trend
-    const cycle3 = Math.sin(time * config.freq * 2.1) * 0.2 + 0.5  // Shorter term oscillation
-    
-    const combinedCycle = (cycle1 + cycle2 + cycle3) / 3
-    const noise = (Math.random() - 0.5) * 0.15 // ±7.5% random noise
-    
-    // Calculate price variation around base price
-    const variation = (combinedCycle + noise - 0.5) * config.amplitude
-    const price = basePrice * (1 + variation)
-    
-    m.price = Math.max(0.1, Math.min(5.0, price))
+    // Price range: 0.5 to 3.0 DIA per stone
+    const basePrice = 0.5 + (cycle + noise) * 2.5
+    m.price = Math.max(0.1, Math.min(5.0, basePrice))
     
     m.hist.push(m.price)
     if (m.hist.length > 200) m.hist.shift()
@@ -525,6 +514,7 @@ export function tradeCurrency(from, to, amount) {
   // Map short names to full property names
   const currencyMap = {
     'dia': 'diamantium',
+    'ete': 'eternium', 
     'ste': 'stellarium',
     'neb': 'nebulium',
     'vor': 'vortexium'
@@ -544,26 +534,23 @@ export function tradeCurrency(from, to, amount) {
     return false
   }
   
-  // Check if player has any class currency (for 1:1 trading)
-  const hasClassCurrency = S.meta.stellarium > 0 || S.meta.nebulium > 0 || S.meta.vortexium > 0
+  // Only allow trading from DIA/ETE to STE/NEB/VOR
+  const validFrom = ['dia', 'ete']
+  const validTo = ['ste', 'neb', 'vor']
   
-  // Trading rules:
-  // 1. DIA -> STE/NEB/VOR (market prices)
-  // 2. STE/NEB/VOR -> STE/NEB/VOR (1:1, only if you have some class currency)
+  if (!validFrom.includes(from) || !validTo.includes(to)) {
+    logMsg(`❌ Can only trade from ${validFrom.join('/')} to ${validTo.join('/')}`)
+    return false
+  }
+  
+  // Calculate cost based on market prices
   let cost
-  
   if (from === 'dia') {
-    // DIA to class currency (market prices)
     cost = Math.ceil(amount * S.market[to].price)
-  } else if (['ste', 'neb', 'vor'].includes(from) && ['ste', 'neb', 'vor'].includes(to)) {
-    // Class currency to class currency (1:1 exchange)
-    if (!hasClassCurrency) {
-      logMsg(`❌ Need at least 1 class currency to trade between them`)
-      return false
-    }
-    cost = amount // 1:1 exchange
+  } else if (from === 'ete') {
+    cost = Math.ceil(amount * S.market[to].price * 0.5) // ETE worth 2x DIA
   } else {
-    logMsg(`❌ Invalid trade: can only trade DIA for class currencies, or class currencies 1:1`)
+    logMsg(`❌ Invalid source currency: ${from}`)
     return false
   }
   
@@ -586,13 +573,7 @@ export function tradeCurrency(from, to, amount) {
   S.meta[toProp] += amount
   
   console.log(`Trade successful! New balances:`, S.meta)
-  
-  if (from === 'dia') {
-    logMsg(`💱 Traded ${cost} DIA for ${amount} ${to.toUpperCase()} @ ${S.market[to].price.toFixed(2)}`)
-  } else {
-    logMsg(`💱 Traded ${cost} ${from.toUpperCase()} for ${amount} ${to.toUpperCase()} (1:1)`)
-  }
-  
+  logMsg(`💱 Traded ${cost} ${from.toUpperCase()} for ${amount} ${to.toUpperCase()} @ ${S.market[to].price.toFixed(2)}`)
   return true
 }
 

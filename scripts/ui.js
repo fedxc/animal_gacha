@@ -22,6 +22,8 @@ import {
   prestigePotentialBreakdown,
   buyCurrency,
   sellCurrency,
+  tradeCurrency,
+  classPower,
 } from './logic.js'
 
 // SVG Icons
@@ -47,10 +49,16 @@ export const renderTop = () => {
   if (nGph) nGph.textContent = F(m.gph)
   if (nTph) nTph.textContent = F(m.tph)
   // Market top balances
-  const pDia = el('#priceDia'), pEte = el('#priceEte'), gBal = el('#goldBal')
-  if (pDia && S.market) pDia.textContent = F(S.market.dia.price)
-  if (pEte && S.market) pEte.textContent = F(S.market.ete.price)
-  if (gBal) gBal.textContent = F(S.gold)
+  const pSte = el('#priceSte'), pNeb = el('#priceNeb'), pVor = el('#priceVor')
+  if (pSte && S.market) pSte.textContent = S.market.ste.price.toFixed(2)
+  if (pNeb && S.market) pNeb.textContent = S.market.neb.price.toFixed(2)
+  if (pVor && S.market) pVor.textContent = S.market.vor.price.toFixed(2)
+  
+  // Class currency display
+  const nSte = el('#stellarium'), nNeb = el('#nebulium'), nVor = el('#vortexium')
+  if (nSte) nSte.textContent = S.meta.stellarium
+  if (nNeb) nNeb.textContent = S.meta.nebulium
+  if (nVor) nVor.textContent = S.meta.vortexium
 }
 
 export const renderEnemy = () => {
@@ -124,6 +132,9 @@ export const drawAllSparks = () => {
   if (S.market) {
     drawSpark('chartDia', S.market.dia.hist || [])
     drawSpark('chartEte', S.market.ete.hist || [])
+    drawSpark('chartSte', S.market.ste.hist || [])
+    drawSpark('chartNeb', S.market.neb.hist || [])
+    drawSpark('chartVor', S.market.vor.hist || [])
   }
 }
 
@@ -215,6 +226,16 @@ export const renderParty = () => {
       <div><b>Crit</b>${Math.round(st.crit * 100)}%</div>
       <div><b>Armor</b>${F(st.armor)}</div>
       <div><b>Jewelry</b>${u.jewelry.filter(Boolean).length}/3</div>`
+    
+    // Add power bar for class currency
+    const power = classPower[u.role.toLowerCase()]()
+    const powerBar = document.createElement('div')
+    powerBar.className = 'power-bar'
+    powerBar.innerHTML = `
+      <div class="power-fill" style="width: ${power}%"></div>
+      <span class="power-text">${u.role} Power: ${power}/100</span>
+    `
+    node.appendChild(powerBar)
     const j0 = u.jewelry[0] && S.inventory.jewelry[u.jewelry[0]]
     const j1 = u.jewelry[1] && S.inventory.jewelry[u.jewelry[1]]
     const j2 = u.jewelry[2] && S.inventory.jewelry[u.jewelry[2]]
@@ -361,6 +382,24 @@ function bindMarket() {
   if (bSellDia) bSellDia.onclick = () => { sellCurrency('dia', Math.max(1, Number(amtDia.value||1)|0)); render(); save() }
   if (bBuyEte) bBuyEte.onclick = () => { buyCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
   if (bSellEte) bSellEte.onclick = () => { sellCurrency('ete', Math.max(1, Number(amtEte.value||1)|0)); render(); save() }
+  
+  // New currency trading bindings
+  const tradeBtn = el('#tradeBtn')
+  const fromCurrency = el('#fromCurrency')
+  const toCurrency = el('#toCurrency')
+  const tradeAmount = el('#tradeAmount')
+  
+  if (tradeBtn) {
+    tradeBtn.onclick = () => {
+      const from = fromCurrency.value
+      const to = toCurrency.value
+      const amount = Math.max(1, Number(tradeAmount.value || 1) | 0)
+      if (tradeCurrency(from, to, amount)) {
+        render()
+        save()
+      }
+    }
+  }
 }
 
 export const runDev = (cmd) => {
@@ -384,6 +423,15 @@ export const runDev = (cmd) => {
   } else if (key === 'ete' || key === 'eternium') {
     S.meta.eternium += val || 1
     logMsg(`DEV: +${val || 1} Eternium`)
+  } else if (key === 'ste' || key === 'stellarium') {
+    S.meta.stellarium += val || 1
+    logMsg(`DEV: +${val || 1} Stellarium`)
+  } else if (key === 'neb' || key === 'nebulium') {
+    S.meta.nebulium += val || 1
+    logMsg(`DEV: +${val || 1} Nebulium`)
+  } else if (key === 'vor' || key === 'vortexium') {
+    S.meta.vortexium += val || 1
+    logMsg(`DEV: +${val || 1} Vortexium`)
   }
   const di = el('#devInput')
   if (di) di.value = ''
