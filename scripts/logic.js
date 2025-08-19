@@ -5,6 +5,8 @@ import { clamp, chance, pick, rnd } from './utils.js'
 import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js'
 
 // ===== Units & Stats =====
+// Global gold multiplier to increase gold rate everywhere
+const GOLD_MULT = 2.0
 export const levelUpCost = (lvl) => Math.floor(20 * Math.pow(lvl, 1.7))
 export const starMult = (stars) => Math.pow(1.8, stars - 1)
 export const prestigeMult = (prestige) => Math.pow(10, prestige)
@@ -125,7 +127,7 @@ export const makeJewelry = (forRole, lvl) => {
   return { id, name: pick(names[role]), role, itemLevel, minUnitLevel, effects }
 }
 
-const jewelSaleValue = (j) => Math.floor(3 * j.itemLevel)
+const jewelSaleValue = (j) => Math.floor(3 * j.itemLevel * GOLD_MULT)
 
 function jewelScore(unit, j) {
   if (!j) return -Infinity
@@ -232,7 +234,7 @@ export const spawnEnemy = () => {
   S.enemy = { level: lvl, type, hp, maxHp: hp }
   logMsg(`A ${ENEMY_TYPES.find((e) => e.id === type).name} appears (Lv ${lvl})`)
 }
-export const baseGoldPerKill = (lvl) => Math.floor(10 + lvl * 4)
+export const baseGoldPerKill = (lvl) => Math.floor((10 + lvl * 4) * GOLD_MULT)
 export const dropRolls = (enemyType, lvl) => {
   let c = {
     gold: 1,
@@ -240,15 +242,15 @@ export const dropRolls = (enemyType, lvl) => {
     ticket: 0.06 + lvl * 0.0016,
     weapon: 0.14 + lvl * 0.0009,
     armor: 0.14 + lvl * 0.0009,
-    // Increased base jewelry chance and per-level growth (higher than previous)
-    jewelry: 0.08 + lvl * 0.0018,
+    // Dialed-back jewelry chance
+    jewelry: 0.035 + lvl * 0.0009,
   }
   const bias = ENEMY_TYPES.find((e) => e.id === enemyType)?.bias
   if (bias === 'gold') c.gold *= 1.2
   if (bias === 'ticket') c.ticket *= 2.2
   if (bias === 'weapon') c.weapon *= 1.5
   if (bias === 'armor') c.armor *= 1.5
-  if (bias === 'jewelry') c.jewelry *= 2.4
+  if (bias === 'jewelry') c.jewelry *= 1.9
   return c
 }
 
@@ -303,10 +305,13 @@ export const processKill = () => {
   const goldGain = Math.floor(goldBase * (1 + 0.07 * S.upgrades.gold) * (1 + pstats.goldPct))
   S.gold += goldGain
   logMsg(`+${goldGain} gold`)
+  // After gold changes, proactively refresh UI affordability
+  document && document.dispatchEvent && document.dispatchEvent(new CustomEvent('gold-change'))
   const ch = dropRolls(S.enemy.type, lvl)
   if (chance(ch.ticket)) {
     S.tickets += 1
     logMsg('🎟️ Gacha ticket')
+    document && document.dispatchEvent && document.dispatchEvent(new CustomEvent('tickets-change'))
   }
   if (chance(ch.weapon)) awardWeapon()
   if (chance(ch.armor)) awardArmor()
@@ -326,7 +331,7 @@ export const tick = (dt) => {
 // ===== Gacha =====
 const P_CHAR = 0.015
 const ticketScrapGold = (enemyLvl) => {
-  const base = 5 + enemyLvl * 3
+  const base = (5 + enemyLvl * 3) * GOLD_MULT
   const pstats = partyStats()
   const mult =
     (1 + 0.07 * S.upgrades.gold) *

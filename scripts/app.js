@@ -22,6 +22,7 @@ import {
   renderEnemy,
   renderResets,
   drawAllSparks,
+  refreshAffordability,
 } from './ui.js'
 
 let loopHandle = null
@@ -36,6 +37,7 @@ const loop = () => {
   renderTop()
   renderEnemy()
   renderResets()
+  refreshAffordability()
   if (sampleTimer >= 1) {
     sampleTimer = 0
     pushHist()
@@ -102,6 +104,9 @@ export const start = () => {
   if (!S.enemy || !S.enemy.hp) spawnEnemy()
   autoManageJewelry()
   render()
+  // Force an initial metrics sample so dashboard and charts/logs are populated without waiting a tick
+  pushHist()
+  drawAllSparks()
   // Only run tests when explicitly requested (prevents awarding items on load)
   if (location.search.includes('dev=1')) runTests()
   loopHandle = setInterval(loop, 250)

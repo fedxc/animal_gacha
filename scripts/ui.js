@@ -372,5 +372,42 @@ export const render = () => {
   renderParty()
   renderJewelryBag()
   renderResets()
+  // Ensure logs show on initial load as well, not only after events
+  renderLog()
   drawAllSparks()
 }
+
+// Lightweight UI refresh for affordability states without rebuilding lists
+export const refreshAffordability = () => {
+  // Party level-up buttons
+  document.querySelectorAll('button.level').forEach((btn) => {
+    const id = btn.getAttribute('data-id')
+    const u = id && S.roster[id]
+    if (!u) return
+    const cost = levelUpCost(u.level)
+    const can = S.gold >= cost
+    btn.disabled = !can
+    btn.innerHTML = `Level Up <small>(${F(cost)})</small>`
+    const miss = Math.max(0, cost - S.gold)
+    const missEl = btn.closest('.actions')?.querySelector('.miss')
+    if (missEl) missEl.textContent = can ? '' : `Need ${F(miss)}`
+  })
+  // Upgrade purchase buttons
+  const upgradeCost = (key, lvl) => (({ dps: 100, gold: 120, crit: 150 })[key] * Math.pow(1.35, lvl)) | 0
+  document.querySelectorAll('button.buy').forEach((btn) => {
+    const key = btn.getAttribute('data-upg')
+    if (!key) return
+    const lvl = S.upgrades[key]
+    const cost = upgradeCost(key, lvl)
+    const can = S.gold >= cost
+    btn.disabled = !can
+    btn.innerHTML = `Buy <small>(${F(cost)})</small>`
+    const miss = Math.max(0, cost - S.gold)
+    const missEl = btn.closest('.actions')?.querySelector('.miss')
+    if (missEl) missEl.textContent = can ? '' : `Need ${F(miss)}`
+  })
+}
+
+// Update button affordances when gold or tickets change without full re-render
+document.addEventListener('gold-change', refreshAffordability)
+document.addEventListener('tickets-change', refreshAffordability)
