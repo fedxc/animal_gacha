@@ -1,7 +1,7 @@
 /*
  * App bootstrap and main loop.
  */
-import { now } from './utils.js'
+import { now } from './utils.js?v=20250820_1'
 import { S, load, save, partyUnits } from './state.js'
 import {
   tick,
@@ -14,7 +14,7 @@ import {
   calcMetrics,
   prestigeGoldReq,
   awardJewelry,
-} from './logic.js'
+} from './logic.js?v=20250820_1'
 import {
   render,
   bindTopBar,
@@ -23,7 +23,7 @@ import {
   renderResets,
   drawAllSparks,
   refreshAffordability,
-} from './ui.js'
+} from './ui.js?v=20250820_1'
 
 let loopHandle = null
 let sampleTimer = 0

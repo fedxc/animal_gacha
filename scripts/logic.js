@@ -1,7 +1,7 @@
 /*
  * Core game mechanics: stats, combat, loot and progression.
  */
-import { clamp, chance, pick, rnd } from './utils.js'
+import { clamp, chance, pick, rnd, F, F_Game, F_Price, F_Stats } from './utils.js?v=20250820_1'
 import { S, ENEMY_TYPES, UNIT_POOL, partyUnits, seedUnit } from './state.js'
 
 // ===== Units & Stats =====
@@ -239,7 +239,7 @@ function autoSellJewelry() {
     delete S.inventory.jewelry[j.id]
     sold += 1
   }
-  if (sold > 0) logMsg(`🗑️ Auto-sold ${sold} low-value jewels (+${goldGained} gold)`) 
+  if (sold > 0) logMsg(`🗑️ Auto-sold ${sold} low-value jewels (+${F_Game(goldGained)} gold)`) 
 }
 
 // ===== Logging =====
@@ -283,9 +283,9 @@ export const awardWeapon = () => {
   const improved = power > u.bestWeapon
   if (improved) {
     u.bestWeapon = power
-    logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS) [UPGRADE]`)
+    logMsg(`⚔️ ${u.name} found a weapon (+${F_Stats(power)} DPS) [UPGRADE]`)
   } else {
-    logMsg(`⚔️ ${u.name} found a weapon (+${power} DPS)`)
+    logMsg(`⚔️ ${u.name} found a weapon (+${F_Stats(power)} DPS)`)
   }
 }
 export const awardArmor = () => {
@@ -294,9 +294,9 @@ export const awardArmor = () => {
   const improved = power > u.bestArmor
   if (improved) {
     u.bestArmor = power
-    logMsg(`🛡️ ${u.name} found armor (+${power} Armor) [UPGRADE]`)
+    logMsg(`🛡️ ${u.name} found armor (+${F_Stats(power)} Armor) [UPGRADE]`)
   } else {
-    logMsg(`🛡️ ${u.name} found armor (+${power} Armor)`)
+    logMsg(`🛡️ ${u.name} found armor (+${F_Stats(power)} Armor)`)
   }
 }
 export const awardJewelry = () => {
@@ -327,7 +327,7 @@ export const processKill = () => {
   const pstats = partyStats()
   const goldGain = Math.floor(goldBase * (1 + 0.07 * S.upgrades.gold) * (1 + pstats.goldPct))
   S.gold += goldGain
-  logMsg(`+${goldGain} gold`)
+  logMsg(`+${F_Game(goldGain)} gold`)
   // After gold changes, proactively refresh UI affordability
   document && document.dispatchEvent && document.dispatchEvent(new CustomEvent('gold-change'))
   const ch = dropRolls(S.enemy.type, lvl)
@@ -385,9 +385,9 @@ export const summonOnce = () => {
       u.stars += 1
       result = `DUPE ➜ ${udef.name} ★${u.stars}`
     } else {
-      const bonus = 80 + Math.floor(20 * Math.random())
-      S.gold += bonus
-      result = `Overflow ➜ ${udef.name} → +${bonus} gold`
+          const bonus = 80 + Math.floor(20 * Math.random())
+    S.gold += bonus
+    result = `Overflow ➜ ${udef.name} → +${F_Game(bonus)} gold`
     }
   }
   return { ok: true, msg: result }
@@ -512,7 +512,7 @@ export function updateMarket(dt) {
 }
 
 export function tradeCurrency(from, to, amount) {
-  console.log(`Trading: ${from} -> ${to}, amount: ${amount}`)
+  console.log(`Trading: ${from} -> ${to}, amount: ${F_Game(amount)}`)
   console.log(`Current balances:`, S.meta)
   console.log(`Market prices:`, S.market)
   
@@ -567,11 +567,11 @@ export function tradeCurrency(from, to, amount) {
     return false
   }
   
-  console.log(`Calculated cost: ${cost} ${from} for ${amount} ${to}`)
+  console.log(`Calculated cost: ${F_Game(cost)} ${from} for ${F_Game(amount)} ${to}`)
   
   // Check if player has enough source currency
   if (S.meta[fromProp] < cost) {
-    logMsg(`❌ Not enough ${from.toUpperCase()}: need ${cost}, have ${S.meta[fromProp]}`)
+    logMsg(`❌ Not enough ${from.toUpperCase()}: need ${F_Game(cost)}, have ${F_Game(S.meta[fromProp])}`)
     return false
   }
   
@@ -588,9 +588,9 @@ export function tradeCurrency(from, to, amount) {
   console.log(`Trade successful! New balances:`, S.meta)
   
   if (from === 'dia') {
-    logMsg(`💱 Traded ${cost} DIA for ${amount} ${to.toUpperCase()} @ ${S.market[to].price.toFixed(2)}`)
+    logMsg(`💱 Traded ${F_Game(cost)} DIA for ${F_Game(amount)} ${to.toUpperCase()} @ ${F_Price(S.market[to].price)}`)
   } else {
-    logMsg(`💱 Traded ${cost} ${from.toUpperCase()} for ${amount} ${to.toUpperCase()} (1:1)`)
+    logMsg(`💱 Traded ${F_Game(cost)} ${from.toUpperCase()} for ${F_Game(amount)} ${to.toUpperCase()} (1:1)`)
   }
   
   return true
@@ -651,7 +651,7 @@ export const prestigeEarned = () => {
   const mult = fiveStarBonusMultiplier() * jewelsBonusMultiplier()
   return Math.floor(base * mult)
 }
-export const transcendEarned = () => Math.max(0, Math.floor(ETE_K * Math.sqrt(S.gold)))
+export const transcendEarned = () => 1
 export const prestigeGoldReq = () => Math.floor(10000 * Math.pow(1.6, S.meta?.prestiges || 0))
 
 export function prestigeRequirements() {
@@ -696,13 +696,14 @@ export const prestigeReset = () => {
   S.upgrades = { dps: 0, gold: 0, crit: 0 }
   S.inventory = { jewelry: {} }
   S.meta.prestiges = (S.meta.prestiges || 0) + 1
-  logMsg(`Diamantium +${earned}. Reality rebooted.`)
+  logMsg(`Diamantium +${F_Game(earned)}. Reality rebooted.`)
   spawnEnemy()
 }
 
 export const transcendReset = () => {
   if (!canTranscend()) return
   const earned = transcendEarned()
+  S.meta.diamantium -= 25
   S.meta.eternium += earned
   Object.values(S.roster).forEach((u) => {
     u.transcend += 1
@@ -717,7 +718,7 @@ export const transcendReset = () => {
   S.tickets = 0
   S.upgrades = { dps: 0, gold: 0, crit: 0 }
   S.inventory = { jewelry: {} }
-  logMsg(`Eternium +${earned}. Reality shattered.`)
+  logMsg(`Eternium +${F_Game(earned)}. Reality shattered.`)
   spawnEnemy()
 }
 

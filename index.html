@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Animal Gacha – AFK RPG</title>
-    <link rel="stylesheet" href="styles/main.css?v=20250819" />
+    <link rel="stylesheet" href="styles/main.css?v=20250820" />
   </head>
   <body>
     <div class="app">
@@ -66,7 +66,7 @@
           <button class="btn bad" id="resetBtn" title="Hard Reset">Reset</button>
         </div>
         <div class="tiny nowrap">
-          v0.4.0 • auto-jewelry • prestige requirements
+          v0.5.0 • trading power
         </div>
       </div>
       <div class="grid cols-3" style="margin-top: 0.6rem">
@@ -141,9 +141,9 @@
                   </div>
                 </div>
                 <div class="kv" style="grid-template-columns: repeat(3, 1fr)">
-                  <div><b>Stellarium</b><span id="stellarium">0</span>/100</div>
-                  <div><b>Nebulium</b><span id="nebulium">0</span>/100</div>
-                  <div><b>Vortexium</b><span id="vortexium">0</span>/100</div>
+                  <div><b style="color: #3b82f6">Stellarium</b><span id="stellarium">0</span></div>
+                  <div><b style="color: #8b5cf6">Nebulium</b><span id="nebulium">0</span></div>
+                  <div><b style="color: #ef4444">Vortexium</b><span id="vortexium">0</span></div>
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@
           <input
             id="devInput"
             type="text"
-            placeholder="dev: tickets 50 | gold 1e6 | win | diam 10 | ete 1 | ste 5 | neb 5 | vor 5 | jewelry"
+            placeholder="dev: tickets 50 | gold 1e6 | win | dia 10 | ete 1 | ste 5 | neb 5 | vor 5 | jewelry"
           />
           <button class="btn" id="devRun">Run</button>
         </div>
@@ -225,6 +225,6 @@
         </div>
       </div>
     </template>
-    <script type="module" src="scripts/app.js?v=20250819"></script>
+    <script type="module" src="scripts/app.js?v=20250820_1"></script>
   </body>
 </html>

@@ -151,6 +151,36 @@ small {
   place-items: center;
   border: 1px solid #ffffff14;
 }
+
+.role-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff14;
+  font-weight: bold;
+  font-size: 18px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.char .svg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff14;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 #ffffff10;
+}
+
+.char .svg svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
 .char .meta {
   display: grid;
   gap: 0.2rem;
@@ -160,13 +190,13 @@ small {
   letter-spacing: 0.5px;
 }
 .role.TANK {
-  color: #60a5fa;
+  color: #3b82f6;
 }
 .role.MAGE {
-  color: #c084fc;
+  color: #8b5cf6;
 }
 .role.FIGHTER {
-  color: #f43f5e;
+  color: #ef4444;
 }
 .stars {
   letter-spacing: 0.5px;
@@ -402,7 +432,7 @@ select {
 
 .power-fill {
   height: 100%;
-  background: linear-gradient(90deg, #34d399, #7dd3fc);
+  background: #34d399;
   transition: width 0.3s ease;
 }
 

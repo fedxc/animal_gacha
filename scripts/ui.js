@@ -1,7 +1,7 @@
 /*
  * Rendering and DOM interaction.
  */
-import { F, el } from './utils.js'
+import { F, F_Game, F_Price, F_Stats, F_Dashboard, F_Percent, el } from './utils.js?v=20250820_1'
 import { S, save, resetAll, partyUnits, ENEMY_TYPES } from './state.js'
 import {
   computeUnitStats,
@@ -24,15 +24,128 @@ import {
   sellCurrency,
   tradeCurrency,
   classPower,
-} from './logic.js'
+} from './logic.js?v=20250820_1'
 
-// SVG Icons
-const SVG = {
-  TANK: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M10 28l14-14 14 14-14 10-14-10z" fill="#0e1420"/><path d="M8 28h32"/><path d="M24 14l6 6"/></g></svg>`,
-  MAGE: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="18" r="6"/><path d="M12 36c4-6 8-9 12-9s8 3 12 9"/><path d="M18 12l-4-3M30 12l4-3"/></g></svg>`,
-  FIGHTER: `<svg viewBox="0 0 48 48" class="svg"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M10 34l10-10 4 4-10 10z"/><path d="M24 20l6-6 8 8-6 6z"/><path d="M32 14c3 0 6 1 8 3"/></g></svg>`,
+// Character type color accents and anime-style SVG icons
+const ROLE_COLORS = {
+  TANK: '#3b82f6',    // Blue
+  MAGE: '#8b5cf6',    // Purple  
+  FIGHTER: '#ef4444', // Red
 }
-const iconFor = (role) => ({ TANK: SVG.TANK, MAGE: SVG.MAGE, FIGHTER: SVG.FIGHTER })[role]
+
+// Anime-style SVG icons inspired by the character images
+const SVG_ICONS = {
+  TANK: `<svg viewBox="0 0 48 48" class="svg">
+    <defs>
+      <linearGradient id="tankGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      </linearGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <!-- Body -->
+    <rect x="12" y="20" width="24" height="20" rx="4" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
+    <!-- Head -->
+    <circle cx="24" cy="16" r="8" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
+    <!-- Horns -->
+    <path d="M18 12 Q16 8 18 4" stroke="#1e40af" stroke-width="2" fill="none"/>
+    <path d="M30 12 Q32 8 30 4" stroke="#1e40af" stroke-width="2" fill="none"/>
+    <!-- Eyes -->
+    <circle cx="22" cy="14" r="1.5" fill="#ffffff"/>
+    <circle cx="26" cy="14" r="1.5" fill="#ffffff"/>
+    <circle cx="22" cy="14" r="0.5" fill="#3b82f6"/>
+    <circle cx="26" cy="14" r="0.5" fill="#3b82f6"/>
+    <!-- Energy aura -->
+    <circle cx="24" cy="8" r="3" fill="#60a5fa" opacity="0.8" filter="url(#glow)"/>
+    <circle cx="24" cy="8" r="1.5" fill="#ffffff" opacity="0.9"/>
+    <!-- Arms -->
+    <rect x="8" y="24" width="6" height="12" rx="3" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
+    <rect x="34" y="24" width="6" height="12" rx="3" fill="url(#tankGrad)" stroke="#1e40af" stroke-width="1"/>
+  </svg>`,
+  
+  MAGE: `<svg viewBox="0 0 48 48" class="svg">
+    <defs>
+      <linearGradient id="mageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+      </linearGradient>
+      <filter id="magicGlow">
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <!-- Cat head -->
+    <ellipse cx="24" cy="18" rx="6" ry="5" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Cat ears -->
+    <path d="M18 14 L16 8 L20 12 Z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
+    <path d="M30 14 L32 8 L28 12 Z" fill="#8b5cf6" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Eyes -->
+    <circle cx="22" cy="16" r="1" fill="#ffffff"/>
+    <circle cx="26" cy="16" r="1" fill="#ffffff"/>
+    <circle cx="22" cy="16" r="0.3" fill="#8b5cf6"/>
+    <circle cx="26" cy="16" r="0.3" fill="#8b5cf6"/>
+    <!-- Nose -->
+    <circle cx="24" cy="18" r="0.5" fill="#fbbf24"/>
+    <!-- Robe -->
+    <path d="M16 22 Q24 20 32 22 L30 40 L18 40 Z" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Hood -->
+    <path d="M16 22 Q24 16 32 22 Q24 18 16 22" fill="url(#mageGrad)" stroke="#6d28d9" stroke-width="1"/>
+    <!-- Staff -->
+    <line x1="36" y1="28" x2="42" y2="22" stroke="#6d28d9" stroke-width="2"/>
+    <circle cx="42" cy="22" r="2" fill="#8b5cf6" filter="url(#magicGlow)"/>
+    <!-- Magic orb -->
+    <circle cx="20" cy="26" r="2" fill="#a78bfa" filter="url(#magicGlow)"/>
+    <circle cx="20" cy="26" r="1" fill="#ffffff" opacity="0.8"/>
+  </svg>`,
+  
+  FIGHTER: `<svg viewBox="0 0 48 48" class="svg">
+    <defs>
+      <linearGradient id="fighterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+      </linearGradient>
+      <filter id="fireGlow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <!-- Body -->
+    <ellipse cx="24" cy="28" rx="8" ry="10" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
+    <!-- Head -->
+    <ellipse cx="24" cy="16" rx="6" ry="5" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
+    <!-- Horns -->
+    <path d="M18 12 Q16 6 18 2" stroke="#dc2626" stroke-width="2" fill="none"/>
+    <path d="M30 12 Q32 6 30 2" stroke="#dc2626" stroke-width="2" fill="none"/>
+    <!-- Eyes -->
+    <circle cx="22" cy="14" r="1.2" fill="#ffffff"/>
+    <circle cx="26" cy="14" r="1.2" fill="#ffffff"/>
+    <circle cx="22" cy="14" r="0.4" fill="#ef4444"/>
+    <circle cx="26" cy="14" r="0.4" fill="#ef4444"/>
+    <!-- Fire from forehead -->
+    <path d="M22 8 Q24 2 26 8 Q24 4 22 8" fill="#f97316" filter="url(#fireGlow)"/>
+    <path d="M22 8 Q24 4 26 8 Q24 6 22 8" fill="#fbbf24" opacity="0.8"/>
+    <!-- Legs -->
+    <rect x="18" y="36" width="4" height="8" rx="2" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
+    <rect x="26" y="36" width="4" height="8" rx="2" fill="url(#fighterGrad)" stroke="#dc2626" stroke-width="1"/>
+    <!-- Tail -->
+    <path d="M32 30 Q38 26 36 32" stroke="#dc2626" stroke-width="2" fill="none"/>
+  </svg>`
+}
+
+const getRoleColor = (role) => ROLE_COLORS[role] || '#6b7280'
+const getRoleIcon = (role) => SVG_ICONS[role] || SVG_ICONS.TANK
 
 export const renderTop = () => {
   const nGold = el('#gold'),
@@ -41,24 +154,33 @@ export const renderTop = () => {
     nEte = el('#ete'),
     nGph = el('#gph'),
     nTph = el('#tph')
-  if (nGold) nGold.textContent = F(S.gold)
+  if (nGold) nGold.textContent = F_Game(S.gold)
   if (nTick) nTick.textContent = S.tickets
-  if (nDia) nDia.textContent = F(S.meta.diamantium)
-  if (nEte) nEte.textContent = F(S.meta.eternium)
+  if (nDia) nDia.textContent = F_Game(S.meta.diamantium)
+  if (nEte) nEte.textContent = F_Game(S.meta.eternium)
   const m = calcMetrics()
-  if (nGph) nGph.textContent = F(m.gph)
-  if (nTph) nTph.textContent = F(m.tph)
+  if (nGph) nGph.textContent = F_Game(m.gph)
+  if (nTph) nTph.textContent = F_Game(m.tph)
   // Market top balances
   const pSte = el('#priceSte'), pNeb = el('#priceNeb'), pVor = el('#priceVor')
-  if (pSte && S.market) pSte.textContent = S.market.ste.price.toFixed(2)
-  if (pNeb && S.market) pNeb.textContent = S.market.neb.price.toFixed(2)
-  if (pVor && S.market) pVor.textContent = S.market.vor.price.toFixed(2)
+      if (pSte && S.market) pSte.textContent = F_Price(S.market.ste.price)
+    if (pNeb && S.market) pNeb.textContent = F_Price(S.market.neb.price)
+    if (pVor && S.market) pVor.textContent = F_Price(S.market.vor.price)
   
   // Class currency display
   const nSte = el('#stellarium'), nNeb = el('#nebulium'), nVor = el('#vortexium')
-  if (nSte) nSte.textContent = S.meta.stellarium
-  if (nNeb) nNeb.textContent = S.meta.nebulium
-  if (nVor) nVor.textContent = S.meta.vortexium
+  if (nSte) {
+    nSte.textContent = F_Game(S.meta.stellarium)
+    nSte.style.color = getRoleColor('TANK')
+  }
+  if (nNeb) {
+    nNeb.textContent = F_Game(S.meta.nebulium)
+    nNeb.style.color = getRoleColor('MAGE')
+  }
+  if (nVor) {
+    nVor.textContent = F_Game(S.meta.vortexium)
+    nVor.style.color = getRoleColor('FIGHTER')
+  }
 }
 
 export const renderEnemy = () => {
@@ -68,7 +190,15 @@ export const renderEnemy = () => {
     nLvl = el('#enemyLvl'),
     nBar = el('#hpbar')
   if (nName) nName.textContent = et?.name || '—'
-  if (nType) nType.textContent = et?.id || '—'
+  if (nType) {
+    nType.textContent = et?.id || '—'
+    // Apply role color to enemy type if it matches a character role
+    if (et?.id && ['TANK', 'MAGE', 'FIGHTER'].includes(et.id)) {
+      nType.style.color = getRoleColor(et.id)
+    } else {
+      nType.style.color = ''
+    }
+  }
   if (nLvl) nLvl.textContent = 'Lv ' + S.enemy.level
   const pct = Math.max(0, Math.min(1, S.enemy.hp / S.enemy.maxHp))
   if (nBar) nBar.style.width = pct * 100 + '%'
@@ -80,23 +210,23 @@ export const renderDashboard = () => {
   const grid = el('#dashGrid')
   if (!grid) return
   grid.innerHTML = [
-    `<div><b>DPS</b>${F(m.dps)}</div>`,
-    `<div><b>Kills/min</b>${m.kpm.toFixed(2)}</div>`,
-    `<div><b>TTK</b>${m.ttk.toFixed(2)}s</div>`,
-    `<div><b>Gold/kill</b>${F(m.goldPerKill)}</div>`,
-    `<div><b>Gold/hr</b>${F(m.gph)}</div>`,
-    `<div><b>Tickets/hr</b>${F(m.tph)}</div>`,
-    `<div><b>Weapons/hr</b>${m.weph.toFixed(2)}</div>`,
-    `<div><b>Armor/hr</b>${m.arph.toFixed(2)}</div>`,
-    `<div><b>Jewelry/hr</b>${m.jwph.toFixed(2)}</div>`,
-    `<div><b>Diamantium/hr</b>${m.diah.toFixed(3)}</div>`,
-    `<div><b>Eternium/hr</b>${m.eteh.toFixed(3)}</div>`,
-    `<div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : m.etaDiaH.toFixed(2) + 'h'}</div>`,
-    `<div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : m.etaEteH.toFixed(2) + 'h'}</div>`,
+    `<div><b>DPS</b>${F_Dashboard(m.dps)}</div>`,
+    `<div><b>Kills/min</b>${F_Dashboard(m.kpm)}</div>`,
+    `<div><b>TTK</b>${F_Dashboard(m.ttk)}s</div>`,
+    `<div><b>Gold/kill</b>${F_Dashboard(m.goldPerKill)}</div>`,
+    `<div><b>Gold/hr</b>${F_Dashboard(m.gph)}</div>`,
+    `<div><b>Tickets/hr</b>${F_Dashboard(m.tph)}</div>`,
+    `<div><b>Weapons/hr</b>${F_Dashboard(m.weph)}</div>`,
+    `<div><b>Armor/hr</b>${F_Dashboard(m.arph)}</div>`,
+    `<div><b>Jewelry/hr</b>${F_Dashboard(m.jwph)}</div>`,
+    `<div><b>Diamantium/hr</b>${F_Dashboard(m.diah)}</div>`,
+    `<div><b>Eternium/hr</b>${F_Dashboard(m.eteh)}</div>`,
+    `<div><b>ETA +1 Dia</b>${m.etaDiaH === Infinity ? '—' : F_Game(m.etaDiaH) + 'h'}</div>`,
+    `<div><b>ETA +1 Ete</b>${m.etaEteH === Infinity ? '—' : F_Game(m.etaEteH) + 'h'}</div>`,
     // Party balance diagnostics
-    `<div><b>Tank EHP</b>${F(m.tankEhp)}</div>`,
-    `<div><b>Req EHP</b>${F(m.reqEhp)}</div>`,
-    `<div><b>Guard</b>${m.guard.toFixed(2)}</div>`,
+          `<div><b>Tank EHP</b>${F_Dashboard(m.tankEhp)}</div>`,
+      `<div><b>Req EHP</b>${F_Dashboard(m.reqEhp)}</div>`,
+      `<div><b>Guard</b>${F_Dashboard(m.guard)}</div>`,
   ].join('')
 }
 
@@ -118,7 +248,7 @@ function drawSpark(id, arr) {
     .map((v, i) => {
       const x = (i * (w - 4)) / (n - 1) + 2
       const y = h - 2 - ((v - min) / (max - min || 1)) * (h - 4)
-      return `${x.toFixed(2)},${y.toFixed(2)}`
+      return `${F_Game(x)},${F_Game(y)}`
     })
     .join(' ')
   svg.innerHTML = `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" opacity="0.9"/>`
@@ -148,14 +278,14 @@ export const renderResets = () => {
       <b>Prestige ➜ Diamantium</b>
       <div class="tiny clamp2">
         Reset party; grants DIA. Requirements:
-        <span class="nowrap"><b>Gold ≥ ${F(req.needGold)}</b> (mandatory)</span>.
+        <span class="nowrap"><b>Gold ≥ ${F_Game(req.needGold)}</b> (mandatory)</span>.
       </div>
       <div class="tiny" style="margin-top:.25rem">
-        <span class="${req.goldOk ? '' : 'miss'}">${req.goldOk ? '✓' : '✗'} Gold ≥ ${F(req.needGold)} (you: ${F(S.gold)})</span>
+        <span class="${req.goldOk ? '' : 'miss'}">${req.goldOk ? '✓' : '✗'} Gold ≥ ${F_Game(req.needGold)} (you: ${F_Game(S.gold)})</span>
         <span class="tag" title="Optional" style="margin-left:.5rem; ${req.starsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.starsOk ? '✓' : '○'} 5★ each (optional)</span>
         <span class="tag" title="Optional" style="margin-left:.25rem; ${req.jewelsOk ? 'color:var(--good)' : 'color:var(--ink-dim)'}">${req.jewelsOk ? '✓' : '○'} 3 jewels each (optional)</span>
       </div>
-      ${(() => { const b = prestigePotentialBreakdown(); return `<div class=\"tiny\" style=\"margin:.25rem 0\">Potential breakdown: base ${b.base} × stars ${b.starMult.toFixed(2)} × jewels ${b.jewelMult.toFixed(2)} = <b>${b.total}</b></div>` })()}
+      ${(() => { const b = prestigePotentialBreakdown(); return `<div class=\"tiny\" style=\"margin:.25rem 0\">Potential breakdown: base ${b.base} × stars ${F_Game(b.starMult)} × jewels ${F_Game(b.jewelMult)} = <b>${b.total}</b></div>` })()}
       <button class="btn" id="btnPrestige" ${canPrestige() ? '' : 'disabled'} title="${canPrestige() ? 'Gain ' + diaEarn + ' Dia' : 'Meet all requirements to prestige'}">Prestige</button>
       <div class="tiny">Potential: +${diaEarn} DIA</div>
     </div>
@@ -186,11 +316,12 @@ function formatJewel(j) {
   const eff = Object.entries(j.effects)
     .map(([k, v]) =>
       k === 'armorToDpsPct'
-        ? `Armor→DPS ${Math.round(v * 100)}%`
-        : `${k.replace('Pct', '')} +${Math.round(v * 100)}%`,
+        ? `Armor→DPS ${F_Percent(v * 100)}`
+        : `${k.replace('Pct', '')} +${F_Percent(v * 100)}`,
     )
     .join(' • ')
-  return `${j.name} [${j.role}] <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
+  const roleColor = getRoleColor(j.role)
+  return `${j.name} <span style="color: ${roleColor}">[${j.role}]</span> <span class="tiny">(Lv ${j.itemLevel} • req ${j.minUnitLevel}) • ${eff}</span>`
 }
 
 export const renderParty = () => {
@@ -207,24 +338,30 @@ export const renderParty = () => {
     const share = m.dps > 0 ? computeUnitStats(u).effDps / m.dps : 0
     const etaLevelH = m.gph > 0 ? miss / m.gph : Infinity
     const node = tmpl.content.firstElementChild.cloneNode(true)
-    node.querySelector('.icon').innerHTML = iconFor(u.role)
+    const iconEl = node.querySelector('.icon')
+    const roleColor = getRoleColor(u.role)
+    const roleIcon = getRoleIcon(u.role)
+    iconEl.innerHTML = roleIcon
+    
+    // Add subtle role-colored background to character card
+    node.style.background = `linear-gradient(180deg, var(--panel), var(--panel-2)), linear-gradient(135deg, ${roleColor}10 0%, transparent 50%)`
     node.querySelector('.name').innerHTML =
       `<b>${u.name}</b> <span class="role ${u.role}">${u.role}</span> <span class="stars">${'★'.repeat(u.stars)}</span><span class="tiny"> Prestige ${u.prestige} • Transcend ${u.transcend}</span>`
     node.querySelector('.info').textContent =
-      `Lv ${u.level} • Armory Power: ${Math.floor(u.bestWeapon + u.bestArmor)} • DPS Share: ${(share * 100).toFixed(1)}% • ETA Lvl: ${etaLevelH === Infinity ? '—' : etaLevelH.toFixed(2) + 'h'}`
+      `Lv ${u.level} • Armory Power: ${F_Game(Math.floor(u.bestWeapon + u.bestArmor))} • DPS Share: ${F_Percent(share * 100)} • ETA Lvl: ${etaLevelH === Infinity ? '—' : F_Game(etaLevelH) + 'h'}`
     const btn = node.querySelector('button.level')
     btn.dataset.id = u.id
     btn.disabled = !can
-    btn.innerHTML = `Level Up <small>(${F(lvlCost)})</small>`
+    btn.innerHTML = `Level Up <small>(${F_Game(lvlCost)})</small>`
     const missEl = node.querySelector('.actions .miss')
-    missEl.textContent = can ? '' : `Need ${F(miss)}`
+    missEl.textContent = can ? '' : `Need ${F_Game(miss)}`
     const statsEl = node.querySelector('.stats')
     statsEl.innerHTML = `
-      <div><b>DPS</b>${F(st.effDps)}</div>
-      <div><b>HP</b>${F(st.hp)}</div>
-      <div><b>EHP</b>${F(st.ehp)}</div>
-      <div><b>Crit</b>${Math.round(st.crit * 100)}%</div>
-      <div><b>Armor</b>${F(st.armor)}</div>
+                  <div><b>DPS</b>${F_Stats(st.effDps)}</div>
+        <div><b>HP</b>${F_Stats(st.hp)}</div>
+        <div><b>EHP</b>${F_Stats(st.ehp)}</div>
+        <div><b>Crit</b>${F_Stats(Math.round(st.crit * 100))}%</div>
+        <div><b>Armor</b>${F_Stats(st.armor)}</div>
       <div><b>Jewelry</b>${u.jewelry.filter(Boolean).length}/3</div>`
     
     // Add power bar for class currency
@@ -232,10 +369,15 @@ export const renderParty = () => {
     const powerBar = document.createElement('div')
     powerBar.className = 'power-bar'
     powerBar.innerHTML = `
-      <div class="power-fill" style="width: ${power}%"></div>
+      <div class="power-fill" style="width: ${power}%; background: ${roleColor}"></div>
       <span class="power-text">${u.role} Power: ${power}/100</span>
     `
     node.appendChild(powerBar)
+    
+    // Add role-colored border glow for high power characters
+    if (power >= 80) {
+      node.style.boxShadow = `0 0 10px ${roleColor}40`
+    }
     const j0 = u.jewelry[0] && S.inventory.jewelry[u.jewelry[0]]
     const j1 = u.jewelry[1] && S.inventory.jewelry[u.jewelry[1]]
     const j2 = u.jewelry[2] && S.inventory.jewelry[u.jewelry[2]]
@@ -270,8 +412,8 @@ export const renderUpgrades = () => {
     const btn = node.querySelector('button.buy')
     btn.dataset.upg = d.key
     btn.disabled = !can
-    btn.innerHTML = `Buy <small>(${F(cost)})</small>`
-    node.querySelector('.actions .miss').textContent = can ? '' : `Need ${F(miss)}`
+    btn.innerHTML = `Buy <small>(${F_Game(cost)})</small>`
+    node.querySelector('.actions .miss').textContent = can ? '' : `Need ${F_Game(miss)}`
     wrap.appendChild(node)
   })
   wrap.querySelectorAll('button.buy').forEach((b) => b.addEventListener('click', onBuyUpgrade))
@@ -292,14 +434,15 @@ export const renderJewelryBag = () => {
       const eff = Object.entries(j.effects)
         .map(([k, v]) =>
           k === 'armorToDpsPct'
-            ? `Armor→DPS ${Math.round(v * 100)}%`
-            : `${k.replace('Pct', '')} +${Math.round(v * 100)}%`,
+                    ? `Armor→DPS ${F_Percent(v * 100)}`
+        : `${k.replace('Pct', '')} +${F_Percent(v * 100)}`,
         )
         .join(' • ')
       const req = partyUnits().some((u) => u.level >= j.minUnitLevel)
         ? `Requires Unit Lv ${j.minUnitLevel}`
         : `<span style="color:var(--bad)">Requires Unit Lv ${j.minUnitLevel}</span>`
-      return `<div>• <b>${j.name}</b> [${j.role}] Lv ${j.itemLevel} ${badge}<br><span class="tiny">${req} • ${eff}</span></div>`
+      const roleColor = getRoleColor(j.role)
+      return `<div>• <b>${j.name}</b> <span style="color: ${roleColor}">[${j.role}]</span> Lv ${j.itemLevel} ${badge}<br><span class="tiny">${req} • ${eff}</span></div>`
     })
     .join('')
 }
@@ -340,7 +483,20 @@ export const renderGachaResult = (txt) => {
   const box = el('#gachaResults')
   if (!box) return
   const line = document.createElement('div')
-  line.textContent = '• ' + txt
+  
+  // Add color accents to role mentions in gacha results
+  let coloredTxt = txt
+  if (txt.includes('TANK')) {
+    coloredTxt = txt.replace(/TANK/g, `<span style="color: ${getRoleColor('TANK')}">TANK</span>`)
+  }
+  if (txt.includes('MAGE')) {
+    coloredTxt = txt.replace(/MAGE/g, `<span style="color: ${getRoleColor('MAGE')}">MAGE</span>`)
+  }
+  if (txt.includes('FIGHTER')) {
+    coloredTxt = txt.replace(/FIGHTER/g, `<span style="color: ${getRoleColor('FIGHTER')}">FIGHTER</span>`)
+  }
+  
+  line.innerHTML = '• ' + coloredTxt
   box.prepend(line)
 }
 
@@ -403,36 +559,47 @@ function bindMarket() {
 }
 
 export const runDev = (cmd) => {
-  if (!cmd) return
-  const [key, valRaw] = cmd.trim().split(/\s+/)
-  const val = Number(valRaw || 0)
-  if (key === 'tickets') {
-    S.tickets += val || 1
-    logMsg(`DEV: +${val || 1} tickets`)
-  } else if (key === 'gold') {
-    S.gold += val || 0
-    logMsg(`DEV: +${val || 0} gold`)
-  } else if (key === 'win') {
-    S.enemy.hp = 1
-    logMsg('DEV: finishing current enemy')
-  } else if (key === 'jewelry') {
-    awardJewelry()
-  } else if (key === 'diam' || key === 'dia') {
-    S.meta.diamantium += val || 1
-    logMsg(`DEV: +${val || 1} Diamantium`)
-  } else if (key === 'ete' || key === 'eternium') {
-    S.meta.eternium += val || 1
-    logMsg(`DEV: +${val || 1} Eternium`)
-  } else if (key === 'ste' || key === 'stellarium') {
-    S.meta.stellarium += val || 1
-    logMsg(`DEV: +${val || 1} Stellarium`)
-  } else if (key === 'neb' || key === 'nebulium') {
-    S.meta.nebulium += val || 1
-    logMsg(`DEV: +${val || 1} Nebulium`)
-  } else if (key === 'vor' || key === 'vortexium') {
-    S.meta.vortexium += val || 1
-    logMsg(`DEV: +${val || 1} Vortexium`)
+  if (!cmd) {
+    // If no command entered, use the placeholder text
+    cmd = "tickets 50 | gold 1e6 | win | dia 10 | ete 1 | ste 5 | neb 5 | vor 5 | jewelry"
   }
+  
+  // Split by pipe to handle multiple commands
+  const commands = cmd.split('|').map(c => c.trim()).filter(c => c)
+  
+  commands.forEach(command => {
+    const [key, valRaw] = command.split(/\s+/)
+    const val = Number(valRaw || 0)
+    
+    if (key === 'tickets') {
+      S.tickets += val || 1
+      logMsg(`DEV: +${val || 1} tickets`)
+    } else if (key === 'gold') {
+      S.gold += val || 0
+      logMsg(`DEV: +${val || 0} gold`)
+    } else if (key === 'win') {
+      S.enemy.hp = 1
+      logMsg('DEV: finishing current enemy')
+    } else if (key === 'jewelry') {
+      awardJewelry()
+    } else if (key === 'diam' || key === 'dia') {
+      S.meta.diamantium += val || 1
+      logMsg(`DEV: +${val || 1} Diamantium`)
+    } else if (key === 'ete' || key === 'eternium') {
+      S.meta.eternium += val || 1
+      logMsg(`DEV: +${val || 1} Eternium`)
+    } else if (key === 'ste' || key === 'stellarium') {
+      S.meta.stellarium += val || 1
+      logMsg(`DEV: +${val || 1} Stellarium`)
+    } else if (key === 'neb' || key === 'nebulium') {
+      S.meta.nebulium += val || 1
+      logMsg(`DEV: +${val || 1} Nebulium`)
+    } else if (key === 'vor' || key === 'vortexium') {
+      S.meta.vortexium += val || 1
+      logMsg(`DEV: +${val || 1} Vortexium`)
+    }
+  })
+  
   const di = el('#devInput')
   if (di) di.value = ''
   render()
@@ -462,10 +629,10 @@ export const refreshAffordability = () => {
     const cost = levelUpCost(u.level)
     const can = S.gold >= cost
     btn.disabled = !can
-    btn.innerHTML = `Level Up <small>(${F(cost)})</small>`
+    btn.innerHTML = `Level Up <small>(${F_Game(cost)})</small>`
     const miss = Math.max(0, cost - S.gold)
     const missEl = btn.closest('.actions')?.querySelector('.miss')
-    if (missEl) missEl.textContent = can ? '' : `Need ${F(miss)}`
+    if (missEl) missEl.textContent = can ? '' : `Need ${F_Game(miss)}`
   })
   // Upgrade purchase buttons
   const upgradeCost = (key, lvl) => (({ dps: 100, gold: 120, crit: 150 })[key] * Math.pow(1.35, lvl)) | 0
@@ -476,10 +643,10 @@ export const refreshAffordability = () => {
     const cost = upgradeCost(key, lvl)
     const can = S.gold >= cost
     btn.disabled = !can
-    btn.innerHTML = `Buy <small>(${F(cost)})</small>`
+    btn.innerHTML = `Buy <small>(${F_Game(cost)})</small>`
     const miss = Math.max(0, cost - S.gold)
     const missEl = btn.closest('.actions')?.querySelector('.miss')
-    if (missEl) missEl.textContent = can ? '' : `Need ${F(miss)}`
+    if (missEl) missEl.textContent = can ? '' : `Need ${F_Game(miss)}`
   })
 }
 
