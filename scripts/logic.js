@@ -693,17 +693,38 @@ export function tradeCurrency(from, to, amount) {
     return false
   }
   
+  // Prevent trading the same currency to itself
+  if (from === to) {
+    logMsg(`❌ Cannot trade ${from.toUpperCase()} for itself`)
+    return false
+  }
+  
   // Check if player has any class currency (for 1:1 trading)
   const hasClassCurrency = S.meta.stellarium > 0 || S.meta.nebulium > 0 || S.meta.vortexium > 0
   
   // Trading rules:
   // 1. DIA -> STE/NEB/VOR (market prices)
-  // 2. STE/NEB/VOR -> STE/NEB/VOR (1:1, only if you have some class currency)
+  // 2. STE/NEB/VOR -> DIA (market prices - selling back)
+  // 3. STE/NEB/VOR -> STE/NEB/VOR (1:1, only if you have some class currency)
   let cost
+  let received
   
   if (from === 'dia') {
     // DIA to class currency (market prices)
+    if (!S.market[to] || !S.market[to].price || S.market[to].price <= 0) {
+      logMsg(`❌ Invalid market price for ${to.toUpperCase()}`)
+      return false
+    }
     cost = amount * S.market[to].price
+    received = amount
+  } else if (to === 'dia') {
+    // Class currency to DIA (selling back at market prices)
+    if (!S.market[from] || !S.market[from].price || S.market[from].price <= 0) {
+      logMsg(`❌ Invalid market price for ${from.toUpperCase()}`)
+      return false
+    }
+    cost = amount
+    received = amount * S.market[from].price
   } else if (['ste', 'neb', 'vor'].includes(from) && ['ste', 'neb', 'vor'].includes(to)) {
     // Class currency to class currency (1:1 exchange)
     if (!hasClassCurrency) {
@@ -711,12 +732,13 @@ export function tradeCurrency(from, to, amount) {
       return false
     }
     cost = amount // 1:1 exchange
+    received = amount
   } else {
-    logMsg(`❌ Invalid trade: can only trade DIA for class currencies, or class currencies 1:1`)
+    logMsg(`❌ Invalid trade: can only trade DIA ↔ class currencies, or class currencies 1:1`)
     return false
   }
   
-  console.log(`Calculated cost: ${F_Game(cost)} ${from} for ${F_Game(amount)} ${to}`)
+  console.log(`Calculated cost: ${F_Game(cost)} ${from} for ${F_Game(received)} ${to}`)
   
   // Check if player has enough source currency
   if (S.meta[fromProp] < cost) {
@@ -726,18 +748,18 @@ export function tradeCurrency(from, to, amount) {
     return false
   }
   
-
-  
   // Execute the trade
   S.meta[fromProp] = Math.max(0, S.meta[fromProp] - cost)
-  S.meta[toProp] = S.meta[toProp] + amount
+  S.meta[toProp] = S.meta[toProp] + received
   
   console.log(`Trade successful! New balances:`, S.meta)
   
   if (from === 'dia') {
-    logMsg(`💱 Traded ${F_Game(cost)} DIA for ${F_Game(amount)} ${to.toUpperCase()} @ ${F_Price(S.market[to].price)}`)
+    logMsg(`💱 Traded ${F_Game(cost)} DIA for ${F_Game(received)} ${to.toUpperCase()} @ ${F_Price(S.market[to].price)}`)
+  } else if (to === 'dia') {
+    logMsg(`💱 Sold ${F_Game(cost)} ${from.toUpperCase()} for ${F_Game(received)} DIA @ ${F_Price(S.market[from].price)}`)
   } else {
-    logMsg(`💱 Traded ${F_Game(cost)} ${from.toUpperCase()} for ${F_Game(amount)} ${to.toUpperCase()} (1:1)`)
+    logMsg(`💱 Traded ${F_Game(cost)} ${from.toUpperCase()} for ${F_Game(received)} ${to.toUpperCase()} (1:1)`)
   }
   
   return true

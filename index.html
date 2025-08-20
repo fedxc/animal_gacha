@@ -119,21 +119,42 @@
                   <div class="chart"><div class="tiny">VOR price</div><svg id="chartVor" viewBox="0 0 200 60"></svg></div>
                 </div>
                 <div class="row flex-center">
-                  <div class="tiny">Currency Trading</div>
-                  <select id="fromCurrency" class="w-80">
-                    <option value="dia">DIA</option>
+                  <div class="tiny">Buy Class Currencies</div>
+                  <input id="buyAmount" type="number" min="0.01" step="0.01" value="1" class="w-80" />
+                  <select id="buyCurrency" class="w-80">
                     <option value="ste">STE</option>
                     <option value="neb">NEB</option>
                     <option value="vor">VOR</option>
                   </select>
-                  <input id="tradeAmount" type="number" min="0.01" step="0.01" value="1" class="w-80" />
-                  <select id="toCurrency" class="w-80">
+                  <button class="btn" id="buyBtn">Buy</button>
+                  <div class="tiny exchange-rate" id="buyRate"></div>
+                </div>
+                <div class="row flex-center">
+                  <div class="tiny">Sell Class Currencies</div>
+                  <input id="sellAmount" type="number" min="0.01" step="0.01" value="1" class="w-80" />
+                  <select id="sellCurrency" class="w-80">
                     <option value="ste">STE</option>
                     <option value="neb">NEB</option>
                     <option value="vor">VOR</option>
                   </select>
-                  <button class="btn" id="tradeBtn">Trade</button>
-                  <div class="tiny exchange-rate" id="exchangeRate"></div>
+                  <button class="btn" id="sellBtn">Sell</button>
+                  <div class="tiny exchange-rate" id="sellRate"></div>
+                </div>
+                <div class="row flex-center">
+                  <div class="tiny">Exchange Class Currencies</div>
+                  <input id="exchangeAmount" type="number" min="0.01" step="0.01" value="1" class="w-80" />
+                  <select id="exchangeFrom" class="w-80">
+                    <option value="ste">STE</option>
+                    <option value="neb">NEB</option>
+                    <option value="vor">VOR</option>
+                  </select>
+                  <span class="tiny">→</span>
+                  <select id="exchangeTo" class="w-80">
+                    <option value="neb">NEB</option>
+                    <option value="ste">STE</option>
+                    <option value="vor">VOR</option>
+                  </select>
+                  <button class="btn" id="exchangeBtn">Exchange</button>
                 </div>
                 <div class="kv grid-3-cols">
                   <div><b class="currency-stellarium">Stellarium</b><span id="stellarium">0</span></div>

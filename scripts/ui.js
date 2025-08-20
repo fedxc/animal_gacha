@@ -982,16 +982,40 @@ function bindMarket() {
   if (bSellEte) bSellEte.onclick = () => { sellCurrency('ete', Math.max(MIN_TRADE_AMOUNT, Number(amtEte.value||1)|0)); render(); save() }
   
   // New currency trading bindings
-  const tradeBtn = el('#tradeBtn')
-  const fromCurrency = el('#fromCurrency')
-  const toCurrency = el('#toCurrency')
-  const tradeAmount = el('#tradeAmount')
+  const buyBtn = el('#buyBtn')
+  const sellBtn = el('#sellBtn')
+  const exchangeBtn = el('#exchangeBtn')
   
-  if (tradeBtn) {
-    tradeBtn.onclick = () => {
-      const from = fromCurrency.value
-      const to = toCurrency.value
-      const amount = Math.max(MIN_TRADE_AMOUNT, Number(tradeAmount.value || 1))
+  // Buy class currencies with DIA
+  if (buyBtn) {
+    buyBtn.onclick = () => {
+      const currency = el('#buyCurrency').value
+      const amount = Math.max(MIN_TRADE_AMOUNT, Number(el('#buyAmount').value || 1))
+      if (tradeCurrency('dia', currency, amount)) {
+        render()
+        save()
+      }
+    }
+  }
+  
+  // Sell class currencies for DIA
+  if (sellBtn) {
+    sellBtn.onclick = () => {
+      const currency = el('#sellCurrency').value
+      const amount = Math.max(MIN_TRADE_AMOUNT, Number(el('#sellAmount').value || 1))
+      if (tradeCurrency(currency, 'dia', amount)) {
+        render()
+        save()
+      }
+    }
+  }
+  
+  // Exchange between class currencies
+  if (exchangeBtn) {
+    exchangeBtn.onclick = () => {
+      const from = el('#exchangeFrom').value
+      const to = el('#exchangeTo').value
+      const amount = Math.max(MIN_TRADE_AMOUNT, Number(el('#exchangeAmount').value || 1))
       if (tradeCurrency(from, to, amount)) {
         render()
         save()
@@ -999,36 +1023,69 @@ function bindMarket() {
     }
   }
   
-  // Update exchange rate display
-  const updateExchangeRate = () => {
-    const from = fromCurrency.value
-    const to = toCurrency.value
-    const amount = Number(tradeAmount.value || 1)
-    const exchangeRateEl = el('#exchangeRate')
-    
-    if (exchangeRateEl && S.market) {
-      if (from === 'dia' && ['ste', 'neb', 'vor'].includes(to)) {
-        const cost = amount * S.market[to].price
-        const costFormatted = cost.toFixed(3)
-        exchangeRateEl.textContent = `Cost: ${costFormatted} DIA`
-      } else if (['ste', 'neb', 'vor'].includes(from) && ['ste', 'neb', 'vor'].includes(to)) {
-        exchangeRateEl.textContent = `1:1 exchange`
-      } else {
-        exchangeRateEl.textContent = ''
+  // Update exchange "to" dropdown to avoid same currency
+  const updateExchangeTo = () => {
+    const from = el('#exchangeFrom').value
+    const toSelect = el('#exchangeTo')
+    if (toSelect) {
+      const options = ['ste', 'neb', 'vor'].filter(c => c !== from)
+      toSelect.innerHTML = options.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('')
+      if (toSelect.value === from) {
+        toSelect.value = options[0] || 'ste'
       }
     }
   }
   
+  // Bind exchange dropdown updates
+  if (el('#exchangeFrom')) el('#exchangeFrom').onchange = updateExchangeTo
+  
+  // Initial exchange dropdown setup
+  updateExchangeTo()
+  
+  // Update exchange rate displays
+  const updateBuyRate = () => {
+    const currency = el('#buyCurrency').value
+    const amount = Number(el('#buyAmount').value || 1)
+    const rateEl = el('#buyRate')
+    
+    if (rateEl && S.market && S.market[currency]) {
+      const cost = amount * S.market[currency].price
+      const costFormatted = cost.toFixed(3)
+      rateEl.textContent = `Cost: ${costFormatted} DIA`
+    }
+  }
+  
+  const updateSellRate = () => {
+    const currency = el('#sellCurrency').value
+    const amount = Number(el('#sellAmount').value || 1)
+    const rateEl = el('#sellRate')
+    
+    if (rateEl && S.market && S.market[currency]) {
+      const received = amount * S.market[currency].price
+      const receivedFormatted = received.toFixed(3)
+      rateEl.textContent = `Receive: ${receivedFormatted} DIA`
+    }
+  }
+  
   // Bind exchange rate updates
-  if (fromCurrency) fromCurrency.onchange = updateExchangeRate
-  if (toCurrency) toCurrency.onchange = updateExchangeRate
-  if (tradeAmount) tradeAmount.oninput = updateExchangeRate
+  if (el('#buyCurrency')) el('#buyCurrency').onchange = updateBuyRate
+  if (el('#buyAmount')) el('#buyAmount').oninput = updateBuyRate
+  if (el('#sellCurrency')) el('#sellCurrency').onchange = updateSellRate
+  if (el('#sellAmount')) el('#sellAmount').oninput = updateSellRate
   
-  // Initial exchange rate display
-  updateExchangeRate()
+  // Initial exchange rate displays
+  updateBuyRate()
+  updateSellRate()
   
-  // Export the function so it can be called from the main loop
-  window.updateExchangeRate = updateExchangeRate
+  // Export the functions so they can be called from the main loop
+  window.updateBuyRate = updateBuyRate
+  window.updateSellRate = updateSellRate
+  
+  // Set up real-time updates every second
+  setInterval(() => {
+    updateBuyRate()
+    updateSellRate()
+  }, 1000)
 }
 
 export const runDev = (cmd) => {

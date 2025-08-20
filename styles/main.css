@@ -951,3 +951,16 @@ select {
   opacity: 0.8;
 }
 
+/* ===== LIVE INDICATOR STYLES ===== */
+.live-indicator {
+  color: var(--good);
+  animation: pulse 2s ease-in-out infinite;
+  margin-right: 0.3rem;
+  font-size: 10px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
